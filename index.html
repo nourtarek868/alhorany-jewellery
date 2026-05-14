@@ -433,6 +433,329 @@
     for (const k of [24, 22, 21, 18]) {
       const raw  = gram24 * (k / 24);
       const sell = raw * SELL_F;
+      const buy  = raw     .brand-name {
+      font-family:'Cormorant Garamond',serif;
+      font-size:clamp(1rem,2.2vw,1.65rem); font-weight:700; letter-spacing:.04em;
+      color:#fff; text-align:center; line-height:1; text-shadow:0 2px 16px rgba(0,0,0,.6);
+    }
+    .brand-en {
+      font-family:'Cormorant Garamond',serif;
+      font-size:clamp(.5rem,.9vw,.65rem); letter-spacing:.35em; text-transform:uppercase;
+      color:var(--gold); font-weight:400; text-align:center; opacity:.85;
+    }
+    .header-right { display:flex; flex-direction:column; align-items:flex-start; gap:4px; }
+    #clock {
+      font-family:'Cormorant Garamond',serif;
+      font-size:clamp(1.2rem,2.4vw,2rem); font-weight:600; color:#fff;
+      letter-spacing:.04em; direction:ltr; text-shadow:0 1px 10px rgba(0,0,0,.5);
+    }
+    #date-ar { font-size:clamp(.55rem,.95vw,.7rem); color:var(--ivory-sub); letter-spacing:.04em; font-weight:300; }
+    main {
+      flex:1; display:flex; flex-direction:column; justify-content:center;
+      gap:clamp(12px,2vh,24px); padding:clamp(12px,2vh,22px) 0;
+    }
+    .divider { display:flex; align-items:center; gap:14px; }
+    .divider-line {
+      flex:1; height:1px;
+      background:linear-gradient(90deg,transparent,var(--gold),transparent); opacity:.35;
+    }
+    .divider-label {
+      font-size:clamp(.58rem,1vw,.7rem); letter-spacing:.22em; text-transform:uppercase;
+      color:var(--gold); font-weight:600; white-space:nowrap; opacity:.95;
+    }
+    .cards-row {
+      display:grid; grid-template-columns:repeat(4,1fr); gap:clamp(8px,1.2vw,16px);
+    }
+    .card {
+      background:var(--card-bg); border:1px solid var(--line); border-radius:5px;
+      padding:clamp(14px,2vw,26px) clamp(12px,1.7vw,20px);
+      display:flex; flex-direction:column; gap:10px;
+      position:relative; overflow:hidden; transition:border-color .35s,box-shadow .35s;
+    }
+    .card::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:2px;
+      background:linear-gradient(90deg,transparent,var(--gold-lt),transparent);
+      opacity:0; transition:opacity .35s;
+    }
+    .card:hover { border-color:var(--line-str); box-shadow:0 4px 32px rgba(0,0,0,.4); }
+    .card:hover::before { opacity:.7; }
+    .card.featured {
+      background:var(--card-feat); border-color:rgba(212,168,67,.42);
+      box-shadow:0 0 28px rgba(212,168,67,.08);
+    }
+    .card.featured::before { opacity:.6; }
+    .card-karat {
+      font-size:clamp(.6rem,.95vw,.72rem); letter-spacing:.2em; text-transform:uppercase;
+      color:var(--gold); font-weight:600;
+    }
+    .price-main { display:flex; align-items:baseline; gap:6px; }
+    .price-val {
+      font-family:'Cormorant Garamond',serif;
+      font-size:clamp(1.6rem,2.8vw,2.7rem); font-weight:700; color:#fff;
+      letter-spacing:-.01em; line-height:1; text-shadow:0 1px 8px rgba(0,0,0,.4);
+    }
+    .card.featured .price-val { font-size:clamp(1.8rem,3.1vw,3rem); }
+    .price-cur { font-size:clamp(.58rem,.85vw,.68rem); color:var(--gold); letter-spacing:.08em; font-weight:600; }
+    .buy-sell {
+      display:flex; justify-content:space-between; align-items:center;
+      border-top:1px solid var(--line); padding-top:8px;
+      font-size:clamp(.55rem,.85vw,.65rem); letter-spacing:.02em;
+    }
+    .lbl-sell { color:var(--ivory-dim); font-weight:500; }
+    .lbl-sell b { color:#fff; font-weight:700; margin-right:2px; }
+    .lbl-buy  { color:var(--buy-col); font-weight:500; }
+    .lbl-buy  b { color:var(--buy-col); font-weight:700; margin-right:2px; }
+    .market-row {
+      display:grid; grid-template-columns:1.35fr 1fr 1fr; gap:clamp(8px,1.2vw,16px);
+    }
+    .card-mkt {
+      background:var(--mkt-bg); border:1px solid var(--line); border-radius:5px;
+      padding:clamp(12px,1.8vw,20px) clamp(13px,1.8vw,20px);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      transition:border-color .3s;
+    }
+    .card-mkt:hover { border-color:var(--line-str); }
+    .mkt-label {
+      font-size:clamp(.6rem,.9vw,.7rem); letter-spacing:.1em; color:var(--ivory-dim);
+      font-weight:500; line-height:1.65;
+    }
+    .mkt-label small { opacity:.6; font-size:.88em; }
+    .mkt-right { text-align:left; flex-shrink:0; }
+    .mkt-val {
+      font-family:'Cormorant Garamond',serif;
+      font-size:clamp(1.2rem,2.1vw,2rem); font-weight:700; color:#fff; line-height:1;
+    }
+    .mkt-sub { font-size:clamp(.52rem,.72vw,.62rem); color:var(--ivory-sub); letter-spacing:.06em; margin-top:4px; }
+    @keyframes flashIn {
+      0%{opacity:.4} 40%{color:var(--gold-lt)} 100%{color:inherit}
+    }
+    .flash { animation:flashIn .7s ease-out; }
+    footer {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:clamp(10px,1.8vh,16px) 0 clamp(36px,5vh,48px);
+      border-top:1px solid var(--line); flex-wrap:wrap; gap:10px;
+    }
+    .fnote { font-size:clamp(.54rem,.8vw,.65rem); color:var(--ivory-sub); letter-spacing:.09em; }
+    .zakat-wrap { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .z-sep { width:1px; height:18px; background:var(--line-str); }
+    .z-lbl { font-size:clamp(.54rem,.8vw,.65rem); color:var(--ivory-sub); letter-spacing:.07em; }
+    .z-val {
+      font-family:'Cormorant Garamond',serif;
+      font-size:clamp(.95rem,1.4vw,1.25rem); color:var(--gold-lt); font-weight:700;
+    }
+    @media (max-width:900px) {
+      .cards-row { grid-template-columns:repeat(2,1fr); }
+      .market-row { grid-template-columns:1fr 1fr; }
+      .market-row .card-mkt:first-child { grid-column:1/-1; }
+    }
+    @media (max-width:580px) {
+      header { grid-template-columns:1fr; justify-items:center; gap:10px; }
+      .header-left { justify-content:center; }
+      .header-right { align-items:center; }
+      .cards-row { grid-template-columns:1fr 1fr; }
+      .market-row { grid-template-columns:1fr; }
+    }
+    @media (max-width:380px) { .cards-row { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+
+  <div class="bg-static" id="bg-static"></div>
+  <div class="bg-noise"></div>
+  <div id="video-container"><video id="bg-video" muted playsinline></video></div>
+  <div class="top-border"></div>
+  <div class="bot-border"></div>
+
+  <div class="page">
+    <header>
+      <div class="header-left">
+        <div class="live-pill">
+          <div class="live-dot" id="live-dot"></div>
+          <span class="live-text" id="live-text">مباشر</span>
+        </div>
+      </div>
+
+      <div class="logo-center">
+        <div class="logo-wrap">
+          <div class="logo-ring"></div>
+          <img class="logo-img"
+            src="data:image/jpeg;base64,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"
+            alt="الحوراني" onerror="this.style.display='none'"/>
+        </div>
+        <div class="brand-name">الحوراني للمجوهرات</div>
+        <div class="brand-en">El Horany Jewellery</div>
+      </div>
+
+      <div class="header-right">
+        <div id="clock">--:--:--</div>
+        <div id="date-ar">---</div>
+      </div>
+    </header>
+
+    <main>
+      <div class="divider">
+        <div class="divider-line"></div>
+        <div class="divider-label">أسعار الذهب — سعر الجرام بالجنيه المصري</div>
+        <div class="divider-line"></div>
+      </div>
+
+      <div class="cards-row">
+        <!-- عيار 24 -->
+        <div class="card">
+          <div class="card-karat">عيار ٢٤ — خالص</div>
+          <div class="price-main">
+            <span class="price-val" id="pv-24">—</span>
+            <span class="price-cur">ج.م</span>
+          </div>
+          <div class="buy-sell">
+            <span class="lbl-buy">أنت تبيع <b id="buy-24">—</b></span>
+            <span class="lbl-sell">أنت تشتري <b id="sell-24">—</b></span>
+          </div>
+        </div>
+
+        <!-- عيار 22 -->
+        <div class="card">
+          <div class="card-karat">عيار ٢٢</div>
+          <div class="price-main">
+            <span class="price-val" id="pv-22">—</span>
+            <span class="price-cur">ج.م</span>
+          </div>
+          <div class="buy-sell">
+            <span class="lbl-buy">أنت تبيع <b id="buy-22">—</b></span>
+            <span class="lbl-sell">أنت تشتري <b id="sell-22">—</b></span>
+          </div>
+        </div>
+
+        <!-- عيار 21 -->
+        <div class="card featured">
+          <div class="card-karat">عيار ٢١ ✦</div>
+          <div class="price-main">
+            <span class="price-val" id="pv-21">—</span>
+            <span class="price-cur">ج.م</span>
+          </div>
+          <div class="buy-sell">
+            <span class="lbl-buy">أنت تبيع <b id="buy-21">—</b></span>
+            <span class="lbl-sell">أنت تشتري <b id="sell-21">—</b></span>
+          </div>
+        </div>
+
+        <!-- عيار 18 -->
+        <div class="card">
+          <div class="card-karat">عيار ١٨</div>
+          <div class="price-main">
+            <span class="price-val" id="pv-18">—</span>
+            <span class="price-cur">ج.م</span>
+          </div>
+          <div class="buy-sell">
+            <span class="lbl-buy">أنت تبيع <b id="buy-18">—</b></span>
+            <span class="lbl-sell">أنت تشتري <b id="sell-18">—</b></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider">
+        <div class="divider-line"></div>
+        <div class="divider-label">مؤشرات السوق</div>
+        <div class="divider-line"></div>
+      </div>
+
+      <div class="market-row">
+        <div class="card-mkt">
+          <div class="mkt-label">الجنيه الذهب<br/><small>٨ جرام — عيار ٢١</small></div>
+          <div class="mkt-right">
+            <div class="mkt-val" id="mv-pound">—</div>
+            <div class="mkt-sub">تبيع: <span id="buy-pound">—</span> &nbsp;|&nbsp; تشتري: <span id="sell-pound">—</span> ج.م</div>
+          </div>
+        </div>
+        <div class="card-mkt">
+          <div class="mkt-label">الأوقية<br/><small>بالجنيه المصري</small></div>
+          <div class="mkt-right">
+            <div class="mkt-val" id="mv-oz-egp">—</div>
+            <div class="mkt-sub">٣١.١٠٣٥ جرام — عيار ٢٤</div>
+          </div>
+        </div>
+        <div class="card-mkt">
+          <div class="mkt-label">الأوقية<br/><small>بالدولار الأمريكي</small></div>
+          <div class="mkt-right">
+            <div class="mkt-val" id="mv-oz-usd">—</div>
+            <div class="mkt-sub">دولار الصاغة: <span id="usd-rate">—</span> ج.م</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="fnote" id="last-update">آخر تحديث: —</div>
+      <div class="zakat-wrap">
+        <span class="z-lbl">نصاب الزكاة</span>
+        <div class="z-sep"></div>
+        <span class="z-val" id="zakat-val">—</span>
+        <span class="z-lbl">ج.م</span>
+        <div class="z-sep"></div>
+        <span class="z-lbl">٨٥ جرام × عيار ٢٤</span>
+      </div>
+      <div class="fnote" id="status-note">جارٍ التحديث...</div>
+    </footer>
+  </div>
+
+  <script>
+  /* ═══════════════════════════════════════════════════
+     CLOCK
+  ═══════════════════════════════════════════════════ */
+  function tick() {
+    const n = new Date();
+    document.getElementById('clock').textContent =
+      n.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    document.getElementById('date-ar').textContent =
+      n.toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  }
+  tick(); setInterval(tick, 1000);
+
+  /* ═══════════════════════════════════════════════════
+     GOLD PRICE ENGINE — السوق المصري مباشرة
+     ───────────────────────────────────────────────────
+     المصدر: goldprice.today/api.php
+     بيرجع سعر الجرام والأوقية بالجنيه المصري مباشرة.
+
+     EGP.gram  = سعر جرام عيار 24 خالص
+     EGP.ounce = سعر الأوقية بالجنيه
+
+     الهوامش (من بيانات dahabMasr):
+       sell_factor = 1.000468  (أنت تشتري — أعلى)
+       buy_factor  = 0.992     (أنت تبيع  — أقل)
+  ═══════════════════════════════════════════════════ */
+
+  const SELL_F = 1.004689;   // هامش أنت تشتري — محسوب من dahabMasr
+  const BUY_F  = 0.995923;   // هامش أنت تبيع  — محسوب من dahabMasr
+
+  // قيم مرجعية لو فشل الـ API
+  let lastGram24 = 7951.63;
+  let lastOzEGP  = 247323.39;
+  let lastOzUSD  = 4675.30;
+
+  /* تنسيق: رقمان عشريان — أرقام عربية */
+  function fmt(n) {
+    return n.toLocaleString('ar-EG', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  /* flash عند تغيّر القيمة */
+  function setVal(id, text) {
+    const el = document.getElementById(id);
+    if (!el || el.textContent === text) return;
+    el.textContent = text;
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+  }
+
+  /* تطبيق الأسعار على الواجهة */
+  function render(gram24, ozEGP, ozUSD) {
+    for (const k of [24, 22, 21, 18]) {
+      const raw  = gram24 * (k / 24);
+      const sell = raw * SELL_F;
       const buy  = raw     @keyframes flashIn {
       0%{opacity:.4} 40%{color:var(--gold-lt)} 100%{color:inherit}
     }
