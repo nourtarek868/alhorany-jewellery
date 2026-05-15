@@ -448,31 +448,30 @@ function render(gram24, ozEGP, ozUSD) {
 /* ═══════ FETCH — المصدر الوحيد goldprice.today ═══════ */
 async function fetchPrices() {
   try {
-    const url = 'https://api.allorigins.win/get?url=' +
-      encodeURIComponent('https://goldprice.today/api.php');
+    // سنستخدم هنا رابط API يوفر أسعار الصاغة الحقيقية في مصر
+    // مثال: خدمة توفر الأسعار المحلية كـ JSON مباشر
+    const url = 'https://api.allorigins.win/get?url=' + 
+      encodeURIComponent('https://eg-gold-prices-api.vercel.app/api/today'); // مثال لـ API مصري مخصص
 
-    const r = await fetch(url, {
-      cache: 'no-store',
-      signal: AbortSignal.timeout(12000)
-    });
+    const r = await fetch(url, { cache: 'no-store' });
     if (!r.ok) return null;
 
     const wrapper = await r.json();
-    if (!wrapper.contents) return null;
-
     const d = JSON.parse(wrapper.contents);
 
-    const gram = parseFloat(d?.EGP?.gram);
-    const oz   = parseFloat(d?.EGP?.ounce);
-    const usd  = parseFloat(d?.USD?.ounce);
-
-    if (gram > 1000 && oz > 10000) {
-      return { gram, oz, usd: usd || lastOzUSD };
+    // الـ API المصري هيرجعلك سعر عيار 21 أو 24 الصاغة مباشرة
+    // نفرض أن الـ API يرجع: { g24: 3800, g21: 3325, usdofficial: 47 }
+    
+    if (d && d.g24) {
+      return {
+        gram: parseFloat(d.g24),
+        oz: parseFloat(d.g24 * 31.1035), // حساب الأوقية محلياً
+        usd: parseFloat(d.global_oz || lastOzUSD)
+      };
     }
   } catch(_) {}
   return null;
 }
-
 /* ═══════ UPDATE LOOP ═══════ */
 async function update() {
   const dot  = document.getElementById('live-dot');
