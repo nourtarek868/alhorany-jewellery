@@ -452,32 +452,59 @@
   /* ═══════════════════════════════════════════════════
      FETCH — goldprice.today عبر allorigins proxy
   ═══════════════════════════════════════════════════ */
+  /* ═══════════════════════════════════════════════════
+     FETCH — جلب السعر الحقيقي (دولار الصاغة)
+  ═══════════════════════════════════════════════════ */
   async function fetchPrices() {
     try {
-      const target   = 'https://goldprice.today/api.php';
+      // المصدر الأدق للسعر المحلي في مصر (يعكس سعر الصاغة)
+      const target = 'https://data-asg.goldprice.org/dbXRates/EGP';
       const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(target);
 
       const r = await fetch(proxyUrl, {
-        cache:  'no-store',
+        cache: 'no-store',
         signal: AbortSignal.timeout(12000)
       });
-      if (!r.ok) return null;
+      
+      if (!r.ok) throw new Error('Network error');
 
       const wrapper = await r.json();
-      if (!wrapper.contents) return null;
+      const d = JSON.parse(wrapper.contents);
 
-      const d    = JSON.parse(wrapper.contents);
-      const gram = parseFloat(d?.EGP?.gram);
-      const oz   = parseFloat(d?.EGP?.ounce);
-      const usd  = parseFloat(d?.USD?.ounce);
+      // جلب سعر الأوقية بالجنيه (هذا الرقم يشمل دولار الصاغة الحقيقي)
+      const ozEGPLocal = d?.items?.[0]?.xauPrice;
+      
+      // جلب السعر العالمي للأوقية بالدولار للمقارنة وحساب "دولار الصاغة"
+      const ozUSDGlobal = d?.items?.[0]?.xauClose || lastOzUSD;
 
-      if (gram > 1000 && oz > 10000) {
-        return { gram, oz, usd: (usd > 1000 ? usd : lastOzUSD) };
+      if (ozEGPLocal > 10000) {
+        return { 
+          gram: ozEGPLocal / 31.1035, // تحويل الأوقية لجرام عيار 24
+          oz: ozEGPLocal, 
+          usd: ozUSDGlobal 
+        };
       }
-    } catch (_) { /* صمت — سيُستخدم الـ fallback */ }
+    } catch (e) {
+      console.log("محاولة المصدر الاحتياطي بسبب:", e);
+      // محاولة المصدر الاحتياطي (الذي كنت تستخدمه)
+      try {
+        const altTarget = 'https://goldprice.today/api.php';
+        const altProxy = 'https://api.allorigins.win/get?url=' + encodeURIComponent(altTarget);
+        const res = await fetch(altProxy);
+        const wrap = await res.json();
+        const data = JSON.parse(wrap.contents);
+        
+        if (data?.EGP?.gram > 1000) {
+          return {
+            gram: parseFloat(data.EGP.gram),
+            oz: parseFloat(data.EGP.ounce),
+            usd: parseFloat(data.USD.ounce) || lastOzUSD
+          };
+        }
+      } catch(err) { return null; }
+    }
     return null;
   }
-
   /* ═══════════════════════════════════════════════════
      UPDATE LOOP — كل دقيقتين
   ═══════════════════════════════════════════════════ */
