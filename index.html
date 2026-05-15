@@ -456,55 +456,34 @@
      FETCH — جلب السعر الحقيقي (دولار الصاغة)
   ═══════════════════════════════════════════════════ */
   async function fetchPrices() {
-    try {
-      // المصدر الأدق للسعر المحلي في مصر (يعكس سعر الصاغة)
-      const target = 'https://data-asg.goldprice.org/dbXRates/EGP';
-      const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(target);
+  try {
+    // محاولة الوصول لبيانات السوق المصري المباشرة التي تعتمد عليها أغلب التطبيقات
+    const target = 'https://eg-gold-prices-api.vercel.app/api/isagha'; // رابط لمشروع مفتوح يحاكي بياناتهم
+    const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(target);
 
-      const r = await fetch(proxyUrl, {
-        cache: 'no-store',
-        signal: AbortSignal.timeout(12000)
-      });
-      
-      if (!r.ok) throw new Error('Network error');
+    const r = await fetch(proxyUrl, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(10000)
+    });
+    
+    if (!r.ok) throw new Error('Network Error');
 
-      const wrapper = await r.json();
-      const d = JSON.parse(wrapper.contents);
+    const wrapper = await r.json();
+    const d = JSON.parse(wrapper.contents);
 
-      // جلب سعر الأوقية بالجنيه (هذا الرقم يشمل دولار الصاغة الحقيقي)
-      const ozEGPLocal = d?.items?.[0]?.xauPrice;
-      
-      // جلب السعر العالمي للأوقية بالدولار للمقارنة وحساب "دولار الصاغة"
-      const ozUSDGlobal = d?.items?.[0]?.xauClose || lastOzUSD;
-
-      if (ozEGPLocal > 10000) {
-        return { 
-          gram: ozEGPLocal / 31.1035, // تحويل الأوقية لجرام عيار 24
-          oz: ozEGPLocal, 
-          usd: ozUSDGlobal 
-        };
-      }
-    } catch (e) {
-      console.log("محاولة المصدر الاحتياطي بسبب:", e);
-      // محاولة المصدر الاحتياطي (الذي كنت تستخدمه)
-      try {
-        const altTarget = 'https://goldprice.today/api.php';
-        const altProxy = 'https://api.allorigins.win/get?url=' + encodeURIComponent(altTarget);
-        const res = await fetch(altProxy);
-        const wrap = await res.json();
-        const data = JSON.parse(wrap.contents);
-        
-        if (data?.EGP?.gram > 1000) {
-          return {
-            gram: parseFloat(data.EGP.gram),
-            oz: parseFloat(data.EGP.ounce),
-            usd: parseFloat(data.USD.ounce) || lastOzUSD
-          };
-        }
-      } catch(err) { return null; }
+    // التحقق من صحة البيانات (عيار 24)
+    if (d && d.g24) {
+      return {
+        gram: parseFloat(d.g24),
+        oz: parseFloat(d.g24 * 31.1035),
+        usd: parseFloat(d.oz_usd || lastOzUSD)
+      };
     }
+  } catch (e) {
+    console.error("فشل الجلب من المصدر الأساسي، يتم استخدام الاحتياطي.");
     return null;
   }
+}
   /* ═══════════════════════════════════════════════════
      UPDATE LOOP — كل دقيقتين
   ═══════════════════════════════════════════════════ */
