@@ -392,8 +392,8 @@
      GOLD PRICE ENGINE
   ═══════════════════════════════════════════════════ */
 
-  const SELL_F = 0.99;
-  const BUY_F  = 1.00;
+ const SELL_F = 1.00;  // سعر الجرام الخام (المرجع)
+const BUY_F  = 0.98;  // أنت تبيع للمحل بأقل (حوالي 2% أقل)
 
   let lastGram24 = 7951.63;
   let lastOzEGP  = 247323.39;
@@ -443,31 +443,51 @@
      جلب الأسعار عبر allorigins proxy (يحل مشكلة CORS على Vercel)
   ───────────────────────────────────────────── */
   async function fetchEgyptPrices() {
-    try {
-      const targetUrl = 'https://goldprice.today/api.php';
-      const proxyUrl  = 'https://api.allorigins.win/get?url=' + encodeURIComponent(targetUrl);
+  try {
+    // المصدر 1: gold-price-live.com — السوق المصري المباشر
+    const proxyUrl = 'https://api.allorigins.win/get?url=' + 
+      encodeURIComponent('https://gold-price-live.com/api/gold_prices');
+    
+    const r = await fetch(proxyUrl, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(10000)
+    });
+    if (!r.ok) return null;
+    
+    const wrapper = await r.json();
+    if (!wrapper.contents) return null;
+    
+    const d = JSON.parse(wrapper.contents);
+    
+    // الـ API ده بيرجع gram24 و ounce_usd مباشرة
+    const gram  = parseFloat(d?.gram_24  || d?.price_24 || d?.['24']);
+    const ounce = gram * 31.1035;
+    const usd   = parseFloat(d?.usd_price || d?.oz_usd);
+    
+    if (gram > 1000) return { gram, ounce, usd: usd || (gram / 53.5) };
+  } catch(_) {}
 
-      const r = await fetch(proxyUrl, {
-        cache: 'no-store',
-        signal: AbortSignal.timeout(10000)
-      });
-      if (!r.ok) return null;
-
-      const wrapper = await r.json();
-      if (!wrapper.contents) return null;
-
-      const d   = JSON.parse(wrapper.contents);
-      const egp = d?.EGP;
-      if (!egp) return null;
-
-      const gram  = parseFloat(egp.gram);
-      const ounce = parseFloat(egp.ounce);
-      const usd   = parseFloat(d?.USD?.ounce);
-
-      if (gram > 1000 && ounce > 10000) return { gram, ounce, usd };
-    } catch(_) {}
-    return null;
-  }
+  // fallback: احسب من الأوقية الدولية × سعر الدولار
+  try {
+    const ozUrl = 'https://api.allorigins.win/get?url=' + 
+      encodeURIComponent('https://goldprice.org/live-gold-price.html');
+    // استخدم المصدر الأصلي كـ fallback
+    const r2Url = 'https://api.allorigins.win/get?url=' + 
+      encodeURIComponent('https://goldprice.today/api.php');
+    const r2 = await fetch(r2Url, { cache: 'no-store', signal: AbortSignal.timeout(8000) });
+    if (!r2.ok) return null;
+    const w2 = await r2.json();
+    const d2 = JSON.parse(w2.contents);
+    const egp = d2?.EGP;
+    if (!egp) return null;
+    const gram = parseFloat(egp.gram);
+    const ounce = parseFloat(egp.ounce);
+    const usd = parseFloat(d2?.USD?.ounce);
+    if (gram > 1000 && ounce > 10000) return { gram, ounce, usd };
+  } catch(_) {}
+  
+  return null;
+}
 
   /* ─────────────────────────────────────────────
      حلقة التحديث — كل دقيقتين
