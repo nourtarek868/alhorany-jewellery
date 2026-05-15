@@ -452,38 +452,58 @@
   /* ═══════════════════════════════════════════════════
      FETCH — goldprice.today عبر allorigins proxy
   ═══════════════════════════════════════════════════ */
-  /* ═══════════════════════════════════════════════════
-     FETCH — جلب السعر الحقيقي (دولار الصاغة)
+ /* ═══════════════════════════════════════════════════
+     FETCH — جلب السعر الحقيقي المطابق للصاغة المصرية
   ═══════════════════════════════════════════════════ */
   async function fetchPrices() {
-  try {
-    // محاولة الوصول لبيانات السوق المصري المباشرة التي تعتمد عليها أغلب التطبيقات
-    const target = 'https://eg-gold-prices-api.vercel.app/api/isagha'; // رابط لمشروع مفتوح يحاكي بياناتهم
-    const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(target);
+    try {
+      // استخدام مصدر بيانات يحاكي أسعار السوق المصري (نشرة الصاغة)
+      // هذا الرابط يسحب السعر الخام المتداول فعلياً
+      const target = 'https://raw.githubusercontent.com/Mo-Fathy/egypt-gold-api/main/data.json'; 
+      const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(target);
 
-    const r = await fetch(proxyUrl, {
-      cache: 'no-store',
-      signal: AbortSignal.timeout(10000)
-    });
-    
-    if (!r.ok) throw new Error('Network Error');
+      const r = await fetch(proxyUrl, {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(10000)
+      });
+      
+      if (!r.ok) throw new Error('Network Error');
 
-    const wrapper = await r.json();
-    const d = JSON.parse(wrapper.contents);
+      const wrapper = await r.json();
+      const d = JSON.parse(wrapper.contents);
 
-    // التحقق من صحة البيانات (عيار 24)
-    if (d && d.g24) {
-      return {
-        gram: parseFloat(d.g24),
-        oz: parseFloat(d.g24 * 31.1035),
-        usd: parseFloat(d.oz_usd || lastOzUSD)
-      };
+      // التأكد من جلب سعر عيار 24 الخام من المصدر المصري
+      // ملاحظة: لو المصدر بيعطي عيار 21 مباشرة، نقوم بتحويله لـ 24 للحفاظ على معادلات الـ Render
+      let price24;
+      if (d.gold24) {
+          price24 = parseFloat(d.gold24);
+      } else if (d.gold21) {
+          price24 = parseFloat(d.gold21) * (24 / 21);
+      }
+
+      if (price24 > 1000) {
+        return {
+          gram: price24,
+          oz: price24 * 31.1035,
+          usd: parseFloat(d.usd_rate || lastOzUSD) // سعر دولار الصاغة المحسوب
+        };
+      }
+    } catch (e) {
+      console.error("فشل الجلب من المصدر المصري، يتم استخدام آخر سعر متاح.");
+      
+      // محاولة أخيرة من مصدر احتياطي عالمي سريع
+      try {
+          const backupRes = await fetch('https://api.gold-api.com/price/XAU');
+          const backupData = await backupRes.json();
+          if(backupData && backupData.price) {
+              // هذه الحسبة تقريبية جداً (للطوارئ فقط)
+              const estimatedEGP = backupData.price * 50; // افتراض سعر دولار صاغة 50
+              return { gram: estimatedEGP/31.1035, oz: estimatedEGP, usd: backupData.price };
+          }
+      } catch(err) { return null; }
     }
-  } catch (e) {
-    console.error("فشل الجلب من المصدر الأساسي، يتم استخدام الاحتياطي.");
     return null;
   }
-}
   /* ═══════════════════════════════════════════════════
      UPDATE LOOP — كل دقيقتين
   ═══════════════════════════════════════════════════ */
