@@ -405,10 +405,10 @@ setInterval(tick, 1000);
 /* ═══════════════════════════════════════════════════
    CONFIG
 ═══════════════════════════════════════════════════ */
-const CLIENT_BUY_F  = 1.001;
-const CLIENT_SELL_F = 1;
+const CLIENT_BUY_F  = 1.001; // معامل الشراء من العميل
+const CLIENT_SELL_F = 1;     // معامل البيع للعميل
 
-/* fallback prices */
+/* الأسعار الاحتياطية الثابتة */
 let lastData = {
   g24: 7823,
   g22: 7171,
@@ -431,52 +431,52 @@ function setVal(id, text) {
 
   el.textContent = text;
   el.classList.remove('flash');
-  void el.offsetWidth; // Trigger reflow
+  void el.offsetWidth; // إعادة تشغيل الأنيميشن عند التحديث
   el.classList.add('flash');
 }
 
 /* ═══════════════════════════════════════════════════
-   FETCH PRICES (رابط مباشر لأسعار الصاغة الحقيقية بمصر)
+   FETCH PRICES (الحل الآمن والمتوافق مع بروتوكولات HTTPS)
 ═══════════════════════════════════════════════════ */
 async function fetchPrices() {
   try {
-    // جلب البيانات من الميرور اللحظي المخصص لتغطية أسعار محلات الصاغة بمصر (iSagha / Gold Billion)
-    const res = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent("https://gold-price-live.com/wp-json/custom/v1/gold-prices"), {
+    // السورس الأساسي المشفر بالكامل المتوافق مع جدران حماية Vercel و GitHub Pages
+    const res = await fetch("https://raw.githubusercontent.com/iawmar/egypt-gold-prices/main/prices.json", {
       cache: "no-store"
     });
     
-    if (!res.ok) throw new Error("Primary Egyptian market source error");
+    if (!res.ok) throw new Error("Primary Secure Mirror Error");
     const data = await res.json();
 
-    // التحقق من جودة البيانات القادمة ومطابقتها لأسعار السوق التنفيذية
     const prices = {
-      g24: parseFloat(data.prices.g24 || data.g24),
-      g22: parseFloat(data.prices.g22 || data.g22 || (data.prices.g24 * 22 / 24)),
-      g21: parseFloat(data.prices.g21 || data.g21),
-      g18: parseFloat(data.prices.g18 || data.g18),
-      usdSagha: parseFloat(data.usd_sagha || data.usdSagha || 53.59)
+      g24: parseFloat(data.prices.g24),
+      g22: parseFloat(data.prices.g22 || (data.prices.g24 * 22 / 24)),
+      g21: parseFloat(data.prices.g21),
+      g18: parseFloat(data.prices.g18),
+      usdSagha: parseFloat(data.usd_sagha || 53.59)
     };
 
-    if (!prices.g24 || !prices.g21) throw new Error("Invalid Egyptian entries");
+    if (!prices.g24 || !prices.g21) throw new Error("Invalid Data Formats");
     return prices;
 
   } catch (err) {
-    console.log("FETCH ERROR, trying accurate fallback mirror...", err);
+    console.log("SECURE PIPELINE LOG: Switching to Backup Secure Pipeline...", err);
     
-    // سورس احتياطي مفرمل بنفس أسعار التنفيذ في حالة سقوط الرابط الأول
+    // سورس بديل هجين وآمن أيضاً في حال سقوط السيرفر الأول
     try {
-      const resBackup = await fetch("https://raw.githubusercontent.com/iawmar/egypt-gold-prices/main/prices.json", { cache: "no-store" });
-      const dataBackup = await resBackup.json();
-      
+      const resBackup = await fetch("https://api.gold-api.com/v1/gold/USD", { cache: "no-store" });
+      const goldUsdData = await resBackup.json();
+      const priceInEGP = (goldUsdData.price / 31.1035) * lastData.usdSagha;
+
       return {
-        g24: parseFloat(dataBackup.prices.g24),
-        g22: parseFloat(dataBackup.prices.g22),
-        g21: parseFloat(dataBackup.prices.g21),
-        g18: parseFloat(dataBackup.prices.g18),
-        usdSagha: parseFloat(dataBackup.usd_sagha || 53.59)
+        g24: priceInEGP,
+        g22: priceInEGP * (22 / 24),
+        g21: priceInEGP * (21 / 24),
+        g18: priceInEGP * (18 / 24),
+        usdSagha: lastData.usdSagha
       };
     } catch(e) {
-      console.log("Both local APIs failed. Using last cached market data.");
+      console.log("Both secure pipelines failed. Using offline storage.");
       return null;
     }
   }
@@ -486,7 +486,6 @@ async function fetchPrices() {
    RENDER
 ═══════════════════════════════════════════════════ */
 function render(data) {
-  /* MARKET_FIX تم تصفيره لأن البيانات أصبحت تأتي من الصاغة مباشرة دون فجوة الحساب العالمي */
   const MARKET_FIX = 0;
 
   const g24 = data.g24 + MARKET_FIX;
@@ -494,55 +493,51 @@ function render(data) {
   const g21 = data.g21 + MARKET_FIX;
   const g18 = data.g18 + MARKET_FIX;
 
-  /* الخام */
+  /* تحديث الجرامات الأساسية */
   setVal('pv-24', fmt(g24));
   setVal('pv-22', fmt(g22));
   setVal('pv-21', fmt(g21));
   setVal('pv-18', fmt(g18));
 
-  /* البيع */
+  /* تحديث أسعار البيع للشاشات والعملاء (أنت تشتري) */
   setVal('sell-24', fmt(g24 * CLIENT_BUY_F));
   setVal('sell-22', fmt(g22 * CLIENT_BUY_F));
   setVal('sell-21', fmt(g21 * CLIENT_BUY_F));
   setVal('sell-18', fmt(g18 * CLIENT_BUY_F));
 
-  /* الشراء */
+  /* تحديث أسعار الشراء من العملاء (أنت تبيع) */
   setVal('buy-24', fmt(g24 * CLIENT_SELL_F));
   setVal('buy-22', fmt(g22 * CLIENT_SELL_F));
   setVal('buy-21', fmt(g21 * CLIENT_SELL_F));
   setVal('buy-18', fmt(g18 * CLIENT_SELL_F));
 
-  /* الجنيه الذهب */
+  /* حسابات الجنيه الذهب وعرضه */
   const pound = g21 * 8;
-
   setVal('mv-pound', fmt(pound));
   setVal('sell-pound', fmt(pound * CLIENT_BUY_F));
   setVal('buy-pound', fmt(pound * CLIENT_SELL_F));
 
-  /* الأونصة */
+  /* حسابات الأوقية محلياً */
   const ozEGP = g24 * 31.1035;
-
   setVal('mv-oz-egp', fmt(ozEGP));
 
-  /* دولار الصاغة الحقيقي المتداول وليس البنك */
+  /* تحديث سعر دولار الصاغة التنفيذي وليس البنك */
   const usdSagha = data.usdSagha || 53.59;
-
   const usdRateEl = document.getElementById('usd-rate');
   if (usdRateEl) {
     usdRateEl.textContent = usdSagha.toFixed(2);
   }
 
-  /* الأونصة بالدولار */
+  /* حساب الأوقية عالمياً بالدولار بناء على دولار الصاغة */
   const ozUSD = ozEGP / usdSagha;
-
   setVal('mv-oz-usd', fmt(ozUSD));
 
-  /* الزكاة */
+  /* حساب نصاب زكاة المال تلقائياً */
   setVal('zakat-val', fmt(g24 * 85));
 }
 
 /* ═══════════════════════════════════════════════════
-   UPDATE LOOP (محدث ليعمل كل 10 دقائق بالضبط)
+   UPDATE LOOP (محدّث ليعمل بدقة كل ساعة / 10 دقائق حسب رغبتك)
 ═══════════════════════════════════════════════════ */
 async function update() {
   const dot = document.getElementById('live-dot');
@@ -580,14 +575,13 @@ async function update() {
   }
 }
 
-// تشغيل فوري عند فتح الصفحة
+// تشغيل فوري للتحديث عند فتح الصفحة
 update();
-
-// ضبط المؤقت الداخلي على 10 دقائق كاملة (10 دقائق * 60 ثانية * 1000 مللي ثانية)
+// تحديث مستمر وجدولته كل 10 دقائق (600000 مللي ثانية) لضمان عدم توقف الخدمة
 setInterval(update, 10 * 60 * 1000);
 
 /* ═══════════════════════════════════════════════════
-   VIDEO BACKGROUND
+   VIDEO BACKGROUND LOGIC
 ═══════════════════════════════════════════════════ */
 const WAIT_MS = 3 * 60 * 1000;
 
