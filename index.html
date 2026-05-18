@@ -382,266 +382,304 @@
 ═══════════════════════════════════════════════════ */
 function tick() {
   const n = new Date();
-
   document.getElementById('clock').textContent =
-    n.toLocaleTimeString('ar-EG', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
-
+    n.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   document.getElementById('date-ar').textContent =
-    n.toLocaleDateString('ar-EG', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    n.toLocaleDateString('ar-EG',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 }
-
-tick();
-setInterval(tick, 1000);
+tick(); setInterval(tick, 1000);
 
 /* ═══════════════════════════════════════════════════
-   CONFIG
+   GOLD PRICE ENGINE
 ═══════════════════════════════════════════════════ */
-const CLIENT_BUY_F  = 1.001; // معامل الشراء من العميل
-const CLIENT_SELL_F = 1;     // معامل البيع للعميل
 
-/* الأسعار الاحتياطية الثابتة */
-let lastData = {
-  g24: 7823,
-  g22: 7171,
-  g21: 6845,
-  g18: 5867,
-  usdSagha: 53.59
-};
+const SELL_F = 1.00;
+const BUY_F  = 1.00;
 
-/* ═══════════════════════════════════════════════════
-   HELPERS
-═══════════════════════════════════════════════════ */
+let lastGram24 = 7823;
+let lastOzEGP  = 243380;
+let lastOzUSD  = 4540;
+let lastUsdEgp = 52.83;
+
 function fmt(n) {
-  return Math.round(n).toLocaleString('ar-EG');
+  return n.toLocaleString('ar-EG', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
 }
 
 function setVal(id, text) {
   const el = document.getElementById(id);
-  if (!el) return;
-  if (el.textContent === text) return;
-
+  if (!el || el.textContent === text) return;
   el.textContent = text;
   el.classList.remove('flash');
-  void el.offsetWidth; // إعادة تشغيل الأنيميشن عند التحديث
+  void el.offsetWidth;
   el.classList.add('flash');
 }
 
-/* ═══════════════════════════════════════════════════
-   FETCH PRICES (الحل الآمن والمتوافق مع بروتوكولات HTTPS)
-═══════════════════════════════════════════════════ */
-async function fetchPrices() {
-  try {
-    // السورس الأساسي المشفر بالكامل المتوافق مع جدران حماية Vercel و GitHub Pages
-    const res = await fetch("https://raw.githubusercontent.com/iawmar/egypt-gold-prices/main/prices.json", {
-      cache: "no-store"
-    });
-    
-    if (!res.ok) throw new Error("Primary Secure Mirror Error");
-    const data = await res.json();
-
-    const prices = {
-      g24: parseFloat(data.prices.g24),
-      g22: parseFloat(data.prices.g22 || (data.prices.g24 * 22 / 24)),
-      g21: parseFloat(data.prices.g21),
-      g18: parseFloat(data.prices.g18),
-      usdSagha: parseFloat(data.usd_sagha || 53.59)
-    };
-
-    if (!prices.g24 || !prices.g21) throw new Error("Invalid Data Formats");
-    return prices;
-
-  } catch (err) {
-    console.log("SECURE PIPELINE LOG: Switching to Backup Secure Pipeline...", err);
-    
-    // سورس بديل هجين وآمن أيضاً في حال سقوط السيرفر الأول
-    try {
-      const resBackup = await fetch("https://api.gold-api.com/v1/gold/USD", { cache: "no-store" });
-      const goldUsdData = await resBackup.json();
-      const priceInEGP = (goldUsdData.price / 31.1035) * lastData.usdSagha;
-
-      return {
-        g24: priceInEGP,
-        g22: priceInEGP * (22 / 24),
-        g21: priceInEGP * (21 / 24),
-        g18: priceInEGP * (18 / 24),
-        usdSagha: lastData.usdSagha
-      };
-    } catch(e) {
-      console.log("Both secure pipelines failed. Using offline storage.");
-      return null;
-    }
+function render(gram24, ozEGP, ozUSD) {
+  for (const k of [24, 22, 21, 18]) {
+    const raw  = gram24 * (k / 24);
+    const sell = raw * SELL_F;
+    const buy  = raw * BUY_F;
+    setVal(`pv-${k}`,   fmt(sell));
+    setVal(`sell-${k}`, fmt(sell));
+    setVal(`buy-${k}`,  fmt(buy));
   }
-}
 
-/* ═══════════════════════════════════════════════════
-   RENDER
-═══════════════════════════════════════════════════ */
-function render(data) {
-  const MARKET_FIX = 0;
+  const raw21 = gram24 * (21 / 24);
+  setVal('mv-pound',   fmt(raw21 * SELL_F * 8));
+  setVal('sell-pound', fmt(raw21 * SELL_F * 8));
+  setVal('buy-pound',  fmt(raw21 * BUY_F  * 8));
 
-  const g24 = data.g24 + MARKET_FIX;
-  const g22 = data.g22 + MARKET_FIX;
-  const g21 = data.g21 + MARKET_FIX;
-  const g18 = data.g18 + MARKET_FIX;
-
-  /* تحديث الجرامات الأساسية */
-  setVal('pv-24', fmt(g24));
-  setVal('pv-22', fmt(g22));
-  setVal('pv-21', fmt(g21));
-  setVal('pv-18', fmt(g18));
-
-  /* تحديث أسعار البيع للشاشات والعملاء (أنت تشتري) */
-  setVal('sell-24', fmt(g24 * CLIENT_BUY_F));
-  setVal('sell-22', fmt(g22 * CLIENT_BUY_F));
-  setVal('sell-21', fmt(g21 * CLIENT_BUY_F));
-  setVal('sell-18', fmt(g18 * CLIENT_BUY_F));
-
-  /* تحديث أسعار الشراء من العملاء (أنت تبيع) */
-  setVal('buy-24', fmt(g24 * CLIENT_SELL_F));
-  setVal('buy-22', fmt(g22 * CLIENT_SELL_F));
-  setVal('buy-21', fmt(g21 * CLIENT_SELL_F));
-  setVal('buy-18', fmt(g18 * CLIENT_SELL_F));
-
-  /* حسابات الجنيه الذهب وعرضه */
-  const pound = g21 * 8;
-  setVal('mv-pound', fmt(pound));
-  setVal('sell-pound', fmt(pound * CLIENT_BUY_F));
-  setVal('buy-pound', fmt(pound * CLIENT_SELL_F));
-
-  /* حسابات الأوقية محلياً */
-  const ozEGP = g24 * 31.1035;
   setVal('mv-oz-egp', fmt(ozEGP));
-
-  /* تحديث سعر دولار الصاغة التنفيذي وليس البنك */
-  const usdSagha = data.usdSagha || 53.59;
-  const usdRateEl = document.getElementById('usd-rate');
-  if (usdRateEl) {
-    usdRateEl.textContent = usdSagha.toFixed(2);
-  }
-
-  /* حساب الأوقية عالمياً بالدولار بناء على دولار الصاغة */
-  const ozUSD = ozEGP / usdSagha;
   setVal('mv-oz-usd', fmt(ozUSD));
 
-  /* حساب نصاب زكاة المال تلقائياً */
-  setVal('zakat-val', fmt(g24 * 85));
+  const usdSagha = ozUSD > 0 ? (ozEGP / ozUSD) : 0;
+  document.getElementById('usd-rate').textContent = usdSagha.toFixed(2);
+
+  setVal('zakat-val', fmt(85 * gram24 * BUY_F));
 }
 
-/* ═══════════════════════════════════════════════════
-   UPDATE LOOP (محدّث ليعمل بدقة كل ساعة / 10 دقائق حسب رغبتك)
-═══════════════════════════════════════════════════ */
+/* ─────────────────────────────────────────────
+   مساعد: fetch مع timeout
+───────────────────────────────────────────── */
+async function fetchWithTimeout(url, timeoutMs) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const r = await fetch(url, { cache: 'no-store', signal: ctrl.signal });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/* ─────────────────────────────────────────────
+   سعر الأوقية بالدولار
+───────────────────────────────────────────── */
+async function fetchGoldUSD() {
+  try {
+    const r = await fetchWithTimeout('https://data-asg.goldprice.org/dbXRates/USD', 8000);
+    const d = await r.json();
+    const ozUSD = parseFloat(d?.items?.[0]?.xauPrice);
+    if (ozUSD > 1000) { console.log('✓ goldprice.org USD:', ozUSD); return ozUSD; }
+  } catch(e) { console.warn('✗ goldprice.org:', e.message); }
+
+  try {
+    const r = await fetchWithTimeout('https://api.metals.live/v1/spot/gold', 8000);
+    const d = await r.json();
+    const ozUSD = parseFloat(d?.[0]?.price);
+    if (ozUSD > 1000) { console.log('✓ metals.live USD:', ozUSD); return ozUSD; }
+  } catch(e) { console.warn('✗ metals.live:', e.message); }
+
+  return null;
+}
+
+/* ─────────────────────────────────────────────
+   سعر صرف الدولار / جنيه
+───────────────────────────────────────────── */
+async function fetchUsdEgpRate() {
+  try {
+    const r = await fetchWithTimeout('https://api.frankfurter.app/latest?from=USD&to=EGP', 8000);
+    const d = await r.json();
+    const rate = parseFloat(d?.rates?.EGP);
+    if (rate > 30) { console.log('✓ frankfurter USD/EGP:', rate); return rate; }
+  } catch(e) { console.warn('✗ frankfurter:', e.message); }
+
+  try {
+    const r = await fetchWithTimeout('https://open.er-api.com/v6/latest/USD', 8000);
+    const d = await r.json();
+    const rate = parseFloat(d?.rates?.EGP);
+    if (rate > 30) { console.log('✓ er-api USD/EGP:', rate); return rate; }
+  } catch(e) { console.warn('✗ er-api:', e.message); }
+
+  return null;
+}
+
+/* ─────────────────────────────────────────────
+   استخراج السعر من HTML
+───────────────────────────────────────────── */
+function extractFromHtml(html, source) {
+  if (source.includes('banklive')) {
+    // "The current price of gold is 7823.00 for 24 karats"
+    const m = html.match(/current price of gold is ([\d.]+) for 24/i);
+    if (m) return parseFloat(m[1]);
+
+    // fallback داخل banklive
+    const m21 = html.match(/current price of gold is ([\d.]+) for 21/i);
+    if (m21) return parseFloat(m21[1]) * 24 / 21;
+  }
+
+  if (source.includes('youm7')) {
+    const m = html.match(/عيار[^\d]*24[^\d]*([\d,]+)/);
+    if (m) return parseFloat(m[1].replace(/,/g, ''));
+    const m21 = html.match(/عيار[^\d]*21[^\d]*([\d,]+)/);
+    if (m21) return parseFloat(m21[1].replace(/,/g, '')) * 24 / 21;
+  }
+
+  // عام لأي موقع عربي
+  const patterns24 = [
+    /عيار\s*24[^0-9]*([\d,]+)/,
+    /24\s*عيار[^0-9]*([\d,]+)/,
+    /"24k?"[^0-9]*([\d,]+)/i,
+  ];
+  for (const p of patterns24) {
+    const m = html.match(p);
+    if (m) {
+      const v = parseFloat(m[1].replace(/,/g, ''));
+      if (v > 5000) return v;
+    }
+  }
+
+  const m21 = html.match(/عيار\s*21[^0-9]*([\d,]+)/);
+  if (m21) {
+    const v = parseFloat(m21[1].replace(/,/g, ''));
+    if (v > 5000) return v * 24 / 21;
+  }
+
+  return 0;
+}
+
+/* ─────────────────────────────────────────────
+   جلب السعر المصري — الترتيب الصحيح
+───────────────────────────────────────────── */
+async function fetchEgyptPrices() {
+
+  /* ── المرحلة ١: مصادر مصرية مباشرة ── */
+  const EGYPT_SOURCES = [
+    'https://banklive.net/en/gold-price-today-in-egypt',
+    'https://gold.youm7.com/',
+    'https://arabicgold.net/gold-price-today-egypt/',
+    'https://gold-price-live.com/',
+  ];
+
+  const PROXIES_PREFIX = [
+    (t) => `https://api.allorigins.win/get?url=${encodeURIComponent(t)}`,
+    (t) => `https://corsproxy.io/?url=${encodeURIComponent(t)}`,
+    (t) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(t)}`,
+  ];
+
+  for (const source of EGYPT_SOURCES) {
+    for (const makeProxy of PROXIES_PREFIX) {
+      const proxyUrl = makeProxy(source);
+      try {
+        const r = await fetchWithTimeout(proxyUrl, 11000);
+        let html = '';
+
+        if (proxyUrl.includes('allorigins')) {
+          const w = await r.json();
+          html = w?.contents || '';
+        } else {
+          html = await r.text();
+        }
+
+        if (!html) continue;
+
+        const gram24 = extractFromHtml(html, source);
+
+        if (gram24 > 5000 && gram24 < 20000) {
+          const ozEGP = gram24 * 31.1035;
+          console.log(`✓ ${source.split('/')[2]} via ${proxyUrl.split('/')[2]}:`, gram24.toFixed(0));
+          return { gram: gram24, ounce: ozEGP, usd: lastOzUSD };
+        } else {
+          console.warn(`✗ extracted invalid value from ${source.split('/')[2]}:`, gram24);
+        }
+      } catch(e) {
+        console.warn(`✗ ${source.split('/')[2]} via ${proxyUrl.split('/')[2]}:`, e.message);
+      }
+    }
+  }
+
+  /* ── المرحلة ٢: حساب من الدولار × سعر الصرف ── */
+  console.warn('⚠ كل المصادر المصرية فشلت — جارٍ الحساب من الدولار');
+  const [ozUSD, usdEgp] = await Promise.all([fetchGoldUSD(), fetchUsdEgpRate()]);
+
+  if (ozUSD && usdEgp) {
+    lastUsdEgp = usdEgp;
+    const gram24 = (ozUSD * usdEgp) / 31.1035;
+    const ozEGP  = ozUSD * usdEgp;
+    console.log('✓ USD×EGP:', gram24.toFixed(0), '| rate:', usdEgp);
+    return { gram: gram24, ounce: ozEGP, usd: ozUSD };
+  }
+
+  /* ── المرحلة ٣: دولار × آخر سعر صرف محفوظ ── */
+  if (ozUSD && lastUsdEgp > 30) {
+    const gram24 = (ozUSD * lastUsdEgp) / 31.1035;
+    const ozEGP  = ozUSD * lastUsdEgp;
+    console.log('✓ USD × cached rate:', gram24.toFixed(0));
+    return { gram: gram24, ounce: ozEGP, usd: ozUSD };
+  }
+
+  return null;
+}
+
+/* ─────────────────────────────────────────────
+   حلقة التحديث — كل ١٠ دقائق
+───────────────────────────────────────────── */
 async function update() {
-  const dot = document.getElementById('live-dot');
+  const dot  = document.getElementById('live-dot');
   const note = document.getElementById('status-note');
 
-  const data = await fetchPrices();
+  render(lastGram24, lastOzEGP, lastOzUSD);
+
+  const data = await fetchEgyptPrices();
 
   if (data) {
-    lastData = data;
-    render(data);
+    lastGram24 = data.gram;
+    lastOzEGP  = data.ounce;
+    if (data.usd && data.usd > 1000) lastOzUSD = data.usd;
+    render(lastGram24, lastOzEGP, lastOzUSD);
 
-    if (dot) {
-      dot.style.background = '#4ECB5A';
-      dot.style.boxShadow = '0 0 10px #4ECB5A';
-    }
-
-    const liveTextEl = document.getElementById('live-text');
-    if (liveTextEl) liveTextEl.textContent = 'مباشر';
-    if (note) note.textContent = 'السوق المصري — محدّث ✓';
-
+    dot.style.background = '#4ECB5A';
+    dot.style.boxShadow  = '0 0 10px #4ECB5A';
+    document.getElementById('live-text').textContent = 'مباشر';
+    note.textContent = 'السوق المصري — محدّث ✓';
   } else {
-    render(lastData);
-
-    if (dot) {
-      dot.style.background = '#E8A840';
-      dot.style.boxShadow = '0 0 8px #E8A840';
-    }
-
-    if (note) note.textContent = 'آخر سعر محفوظ';
+    dot.style.background = '#E84040';
+    dot.style.boxShadow  = '0 0 8px #E84040';
+    document.getElementById('live-text').textContent = 'مرجعي';
+    note.textContent = 'تعذّر الاتصال — آخر سعر معروف';
   }
 
-  const lastUpdateEl = document.getElementById('last-update');
-  if (lastUpdateEl) {
-    lastUpdateEl.textContent = 'آخر تحديث: ' + new Date().toLocaleTimeString('ar-EG');
-  }
+  document.getElementById('last-update').textContent =
+    'آخر تحديث: ' + new Date().toLocaleTimeString('ar-EG');
 }
 
-// تشغيل فوري للتحديث عند فتح الصفحة
 update();
-// تحديث مستمر وجدولته كل 10 دقائق (600000 مللي ثانية) لضمان عدم توقف الخدمة
 setInterval(update, 10 * 60 * 1000);
 
 /* ═══════════════════════════════════════════════════
-   VIDEO BACKGROUND LOGIC
+   VIDEO BACKGROUND
 ═══════════════════════════════════════════════════ */
 const WAIT_MS = 3 * 60 * 1000;
-
-const videos = [
-  './videos/vid1.mp4',
-  './videos/vid2.mp4',
-  './videos/bg3.mp4'
-];
-
-let vidIdx = 0;
-
-const vcont = document.getElementById('video-container');
-const bvid = document.getElementById('bg-video');
-const bstat = document.getElementById('bg-static');
+const videos  = ['./videos/vid1.mp4','./videos/vid2.mp4','./videos/bg3.mp4'];
+let vidIdx    = 0;
+const vcont   = document.getElementById('video-container');
+const bvid    = document.getElementById('bg-video');
+const bstat   = document.getElementById('bg-static');
 
 function playNext() {
-  if (!videos.length) {
-    setTimeout(startLoop, WAIT_MS);
-    return;
-  }
-
-  bvid.src = videos[vidIdx];
-  bvid.load();
-
-  if (vcont) vcont.classList.add('active');
-  if (bstat) bstat.style.opacity = '0.15';
-
+  if (!videos.length) { setTimeout(startLoop, WAIT_MS); return; }
+  bvid.src = videos[vidIdx]; bvid.load();
+  vcont.classList.add('active');
+  bstat.style.opacity = '0.15';
   bvid.play().catch(() => nextVid());
 }
-
 function nextVid() {
   vidIdx++;
-
   if (vidIdx >= videos.length) {
     vidIdx = 0;
-    if (vcont) vcont.classList.remove('active');
-    if (bstat) bstat.style.opacity = '1';
-
-    bvid.pause();
-    bvid.removeAttribute('src');
-    bvid.load();
-
+    vcont.classList.remove('active');
+    bstat.style.opacity = '1';
+    bvid.pause(); bvid.removeAttribute('src'); bvid.load();
     setTimeout(startLoop, WAIT_MS);
-  } else {
-    playNext();
-  }
+  } else playNext();
 }
-
-function startLoop() {
-  vidIdx = 0;
-  playNext();
-}
-
-if (bvid) {
-  bvid.addEventListener('ended', nextVid);
-}
-
+function startLoop() { vidIdx = 0; playNext(); }
+bvid.addEventListener('ended', nextVid);
 setTimeout(startLoop, WAIT_MS);
 </script>
-
-
 </body>
 </html>
