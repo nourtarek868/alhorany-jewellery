@@ -394,7 +394,7 @@ tick(); setInterval(tick, 1000);
 ═══════════════════════════════════════════════════ */
 
 const SELL_F = 1.00;
-const BUY_F  = 0.9958;
+const BUY_F  = 0.9968;
 
 let lastGram24 = 7823;
 let lastOzEGP  = 243380;
@@ -557,8 +557,11 @@ async function fetchEgyptPrices() {
 
   const PROXIES_PREFIX = [
     (t) => `https://api.allorigins.win/get?url=${encodeURIComponent(t)}`,
-    (t) => `https://corsproxy.io/?url=${encodeURIComponent(t)}`,
+    (t) => `https://api.allorigins.win/raw?url=${encodeURIComponent(t)}`,
+    (t) => `https://corsproxy.org/?${encodeURIComponent(t)}`,
     (t) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(t)}`,
+    (t) => `https://thingproxy.freeboard.io/fetch/${t}`,
+    (t) => `https://cors.eu.org/${t}`,
   ];
 
   for (const source of EGYPT_SOURCES) {
@@ -568,7 +571,7 @@ async function fetchEgyptPrices() {
         const r = await fetchWithTimeout(proxyUrl, 11000);
         let html = '';
 
-        if (proxyUrl.includes('allorigins')) {
+        if (proxyUrl.includes('allorigins.win/get')) {
           const w = await r.json();
           html = w?.contents || '';
         } else {
