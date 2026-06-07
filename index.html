@@ -239,7 +239,7 @@
 
   <div class="bg-static" id="bg-static"></div>
   <div class="bg-noise"></div>
-  <div id="video-container"><video id="bg-video" muted playsinline></video></div>
+  <div id="video-container"><video id="bg-video" muted playsinline preload="auto"></video></div>
   <div class="top-border"></div>
   <div class="bot-border"></div>
 
@@ -477,15 +477,21 @@ function render(gram24, ozEGP, ozUSD) {
 /* ─────────────────────────────────────────────
    مساعد: fetch مع timeout
 ───────────────────────────────────────────── */
-async function fetchWithTimeout(url, timeoutMs) {
+async function fetchWithTimeout(url, timeoutMs, outerSignal) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  const onAbort = () => ctrl.abort();
+  if (outerSignal) {
+    if (outerSignal.aborted) ctrl.abort();
+    else outerSignal.addEventListener('abort', onAbort);
+  }
   try {
     const r = await fetch(url, { cache: 'no-store', signal: ctrl.signal });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return r;
   } finally {
     clearTimeout(timer);
+    if (outerSignal) outerSignal.removeEventListener('abort', onAbort);
   }
 }
 
@@ -567,10 +573,9 @@ function extractFromHtml(html, source) {
 const BANKLIVE_URL = 'https://banklive.net/en/gold-price-today-in-egypt';
 
 const BANKLIVE_PROXIES = [
+  (t) => `https://corsproxy.io/?${encodeURIComponent(t)}`,
   (t) => `https://api.allorigins.win/raw?url=${encodeURIComponent(t)}`,
   (t) => `https://api.allorigins.win/get?url=${encodeURIComponent(t)}`,
-  (t) => `https://corsproxy.io/?${encodeURIComponent(t)}`,
-  (t) => `https://corsproxy.org/?${encodeURIComponent(t)}`,
   (t) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(t)}`,
 ];
 
@@ -583,8 +588,8 @@ function proxyLabel(url) {
   return url.split('/')[2] || 'proxy';
 }
 
-async function fetchHtmlViaProxy(proxyUrl, timeoutMs = 25000) {
-  const r = await fetchWithTimeout(proxyUrl, timeoutMs);
+async function fetchHtmlViaProxy(proxyUrl, timeoutMs = 25000, signal) {
+  const r = await fetchWithTimeout(proxyUrl, timeoutMs, signal);
   if (proxyUrl.includes('allorigins.win/get')) {
     const w = await r.json();
     return w?.contents || '';
@@ -592,10 +597,10 @@ async function fetchHtmlViaProxy(proxyUrl, timeoutMs = 25000) {
   return r.text();
 }
 
-async function fetchBankliveOne(makeProxy) {
+async function fetchBankliveOne(makeProxy, signal) {
   const proxyUrl = makeProxy(BANKLIVE_URL);
   const label = proxyLabel(proxyUrl);
-  const html = await fetchHtmlViaProxy(proxyUrl);
+  const html = await fetchHtmlViaProxy(proxyUrl, 25000, signal);
   if (!html) throw new Error('empty html');
   const result = makePriceResult(extractFromHtml(html, BANKLIVE_URL));
   if (!result) throw new Error('invalid price');
@@ -607,8 +612,11 @@ async function fetchBankliveOne(makeProxy) {
 ───────────────────────────────────────────── */
 async function tryBanklive() {
   for (let round = 0; round < 2; round++) {
+    const cancelRest = new AbortController();
+
     const tasks = BANKLIVE_PROXIES.map((makeProxy) =>
-      fetchBankliveOne(makeProxy).catch((e) => {
+      fetchBankliveOne(makeProxy, cancelRest.signal).catch((e) => {
+        if (cancelRest.signal.aborted) throw e;
         console.warn(`✗ banklive.net via ${proxyLabel(makeProxy(BANKLIVE_URL))}:`, e.message);
         throw e;
       })
@@ -616,6 +624,7 @@ async function tryBanklive() {
 
     try {
       const { result, label } = await Promise.any(tasks);
+      cancelRest.abort();
       console.log(`✓ banklive.net via ${label}:`, result.gram.toFixed(0));
       return result;
     } catch {
@@ -737,33 +746,66 @@ update();
 /* ═══════════════════════════════════════════════════
    VIDEO BACKGROUND
 ═══════════════════════════════════════════════════ */
-const WAIT_MS = 1 * 60 * 1000;
-const videos  = ['./videos/vid1.mp4','./videos/vid2.mp4'];
-let vidIdx    = 0;
-const vcont   = document.getElementById('video-container');
-const bvid    = document.getElementById('bg-video');
-const bstat   = document.getElementById('bg-static');
+const WAIT_MS   = 1 * 60 * 1000;
+const videos    = ['./videos/vid1.mp4', './videos/vid2.mp4'];
+let vidIdx      = 0;
+let videoTimer  = null;
+
+const vcont = document.getElementById('video-container');
+const bvid  = document.getElementById('bg-video');
+const bstat = document.getElementById('bg-static');
+
+function scheduleVideoLoop() {
+  clearTimeout(videoTimer);
+  videoTimer = setTimeout(startLoop, WAIT_MS);
+}
 
 function playNext() {
-  if (!videos.length) { setTimeout(startLoop, WAIT_MS); return; }
-  bvid.src = videos[vidIdx]; bvid.load();
+  if (!videos.length) { scheduleVideoLoop(); return; }
+
+  const src = videos[vidIdx];
   vcont.classList.add('active');
   bstat.style.opacity = '0.15';
-  bvid.play().catch(() => nextVid());
+
+  bvid.onloadeddata = () => {
+    bvid.play().catch((e) => {
+      console.warn('✗ video play failed:', src, e.message);
+      nextVid();
+    });
+  };
+
+  bvid.onerror = () => {
+    console.warn('✗ video load failed:', src);
+    nextVid();
+  };
+
+  bvid.onended = nextVid;
+
+  bvid.src = src;
+  bvid.load();
 }
+
 function nextVid() {
   vidIdx++;
   if (vidIdx >= videos.length) {
     vidIdx = 0;
     vcont.classList.remove('active');
     bstat.style.opacity = '1';
-    bvid.pause(); bvid.removeAttribute('src'); bvid.load();
-    setTimeout(startLoop, WAIT_MS);
-  } else playNext();
+    bvid.pause();
+    bvid.removeAttribute('src');
+    bvid.load();
+    scheduleVideoLoop();
+  } else {
+    playNext();
+  }
 }
-function startLoop() { vidIdx = 0; playNext(); }
-bvid.addEventListener('ended', nextVid);
-setTimeout(startLoop, WAIT_MS);
+
+function startLoop() {
+  vidIdx = 0;
+  playNext();
+}
+
+scheduleVideoLoop();
 </script>
 </body>
 </html>
