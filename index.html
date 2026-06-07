@@ -392,7 +392,6 @@ tick(); setInterval(tick, 1000);
 /* ═══════════════════════════════════════════════════
    GOLD PRICE ENGINE
 ═══════════════════════════════════════════════════ */
-
 const SELL_F = 1.00;
 const BUY_F  = 0.9958;
 
@@ -426,34 +425,122 @@ function render(gram24, ozEGP, ozUSD) {
     setVal(`sell-${k}`, fmt(sell));
     setVal(`buy-${k}`,  fmt(buy));
   }
-
   const raw21 = gram24 * (21 / 24);
   setVal('mv-pound',   fmt(raw21 * SELL_F * 8));
   setVal('sell-pound', fmt(raw21 * SELL_F * 8));
   setVal('buy-pound',  fmt(raw21 * BUY_F  * 8));
-
   setVal('mv-oz-egp', fmt(ozEGP));
   setVal('mv-oz-usd', fmt(ozUSD));
-
   const usdSagha = ozUSD > 0 ? (ozEGP / ozUSD) : 0;
   document.getElementById('usd-rate').textContent = usdSagha.toFixed(2);
-
   setVal('zakat-val', fmt(85 * gram24 * BUY_F));
 }
 
 /* ─────────────────────────────────────────────
-   مساعد: fetch مع timeout
+   استخراج السعر من HTML
 ───────────────────────────────────────────── */
-async function fetchWithTimeout(url, timeoutMs) {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-  try {
-    const r = await fetch(url, { cache: 'no-store', signal: ctrl.signal });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return r;
-  } finally {
-    clearTimeout(timer);
+function extractFromHtml(html, source) {
+  if (!html) return 0;
+
+  if (source.includes('banklive')) {
+    const m = html.match(/current price of gold is ([\d.]+) for 24/i);
+    if (m) return parseFloat(m[1]);
+    const m21 = html.match(/current price of gold is ([\d.]+) for 21/i);
+    if (m21) return parseFloat(m21[1]) * 24 / 21;
   }
+
+  if (source.includes('youm7')) {
+    const m = html.match(/عيار[^\d]*(24)[^\d]*([\d,]+)/);
+    if (m) return parseFloat(m[2].replace(/,/g, ''));
+    const m21 = html.match(/عيار[^\d]*(21)[^\d]*([\d,]+)/);
+    if (m21) return parseFloat(m21[2].replace(/,/g, '')) * 24 / 21;
+  }
+
+  if (source.includes('egcurrency') || source.includes('arabicgold')) {
+    const m = html.match(/عيار\s*24[^0-9]*([\d,]+)/);
+    if (m) {
+      const v = parseFloat(m[1].replace(/,/g, ''));
+      if (v > 5000) return v;
+    }
+  }
+
+  const patterns = [
+    /عيار\s*24[^0-9]*([\d,]+)/,
+    /24\s*عيار[^0-9]*([\d,]+)/,
+    /gold[^0-9]*24[^0-9]*([\d,]+)/i,
+    /"price24"[^0-9]*([\d,]+)/i,
+    /price.*?24k?[^0-9]*([\d,]+)/i,
+  ];
+  for (const p of patterns) {
+    const m = html.match(p);
+    if (m) {
+      const v = parseFloat(m[1].replace(/,/g, ''));
+      if (v > 5000 && v < 25000) return v;
+    }
+  }
+
+  const m21 = html.match(/عيار\s*21[^0-9]*([\d,]+)/);
+  if (m21) {
+    const v = parseFloat(m21[1].replace(/,/g, ''));
+    if (v > 4000 && v < 22000) return v * 24 / 21;
+  }
+
+  return 0;
+}
+
+/* ─────────────────────────────────────────────
+   جلب سعر الذهب المصري من المواقع المصرية
+───────────────────────────────────────────── */
+async function fetchEgyptGoldDirect() {
+
+  const SOURCES = [
+    'https://banklive.net/en/gold-price-today-in-egypt',
+    'https://gold.youm7.com/',
+    'https://www.egcurrency.com/gold-price-in-egypt',
+    'https://arabicgold.net/gold-price-today-egypt/',
+  ];
+
+  const PROXIES = [
+    (t) => `https://api.allorigins.win/get?url=${encodeURIComponent(t)}`,
+    (t) => `https://corsproxy.io/?url=${encodeURIComponent(t)}`,
+    (t) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(t)}`,
+    (t) => `https://thingproxy.freeboard.io/fetch/${t}`,
+  ];
+
+  for (const source of SOURCES) {
+    for (const makeProxy of PROXIES) {
+      const url = makeProxy(source);
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 10000);
+        const r = await fetch(url, { cache: 'no-store', signal: ctrl.signal });
+        clearTimeout(timer);
+
+        if (!r.ok) continue;
+
+        let html = '';
+        if (url.includes('allorigins')) {
+          const w = await r.json();
+          html = w?.contents || '';
+        } else {
+          html = await r.text();
+        }
+
+        if (!html || html.length < 500) continue;
+
+        const gram24 = extractFromHtml(html, source);
+        if (gram24 > 5000 && gram24 < 25000) {
+          console.log(`✓ مصري من ${source.split('/')[2]} عبر ${url.split('/')[2]}:`, gram24.toFixed(0));
+          return gram24;
+        } else {
+          console.warn(`✗ قيمة غير صالحة من ${source.split('/')[2]}:`, gram24);
+        }
+      } catch(e) {
+        console.warn(`✗ ${source.split('/')[2]} / ${url.split('/')[2]}:`, e.message);
+      }
+    }
+  }
+  return null;
 }
 
 /* ─────────────────────────────────────────────
@@ -461,127 +548,118 @@ async function fetchWithTimeout(url, timeoutMs) {
 ───────────────────────────────────────────── */
 async function fetchGoldUSD() {
   try {
-    const r = await fetchWithTimeout('https://data-asg.goldprice.org/dbXRates/USD', 8000);
+    const r = await fetch('https://data-asg.goldprice.org/dbXRates/USD', {
+      signal: AbortSignal.timeout(7000)
+    });
     const d = await r.json();
-    const ozUSD = parseFloat(d?.items?.[0]?.xauPrice);
-    if (ozUSD > 1000) { console.log('✓ goldprice.org USD:', ozUSD); return ozUSD; }
+    const oz = parseFloat(d?.items?.[0]?.xauPrice);
+    if (oz > 1000) { console.log('✓ goldprice.org:', oz); return oz; }
   } catch(e) { console.warn('✗ goldprice.org:', e.message); }
 
   try {
-    const r = await fetchWithTimeout('https://api.metals.live/v1/spot/gold', 8000);
+    const r = await fetch('https://api.metals.live/v1/spot/gold', {
+      signal: AbortSignal.timeout(7000)
+    });
     const d = await r.json();
-    const ozUSD = parseFloat(d?.[0]?.price);
-    if (ozUSD > 1000) { console.log('✓ metals.live USD:', ozUSD); return ozUSD; }
+    const oz = parseFloat(d?.[0]?.price);
+    if (oz > 1000) { console.log('✓ metals.live:', oz); return oz; }
   } catch(e) { console.warn('✗ metals.live:', e.message); }
+
+  try {
+    const r = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/xau.json', {
+      signal: AbortSignal.timeout(7000)
+    });
+    const d = await r.json();
+    const oz = parseFloat(d?.xau?.usd);
+    if (oz > 1000) { console.log('✓ fawaz XAU:', oz); return oz; }
+  } catch(e) { console.warn('✗ fawaz xau:', e.message); }
 
   return null;
 }
 
 /* ─────────────────────────────────────────────
-   سعر صرف الدولار / جنيه
+   سعر الدولار / جنيه
 ───────────────────────────────────────────── */
 async function fetchUsdEgpRate() {
   try {
-    const r = await fetchWithTimeout('https://api.frankfurter.app/latest?from=USD&to=EGP', 8000);
+    const r = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json', {
+      signal: AbortSignal.timeout(7000)
+    });
+    const d = await r.json();
+    const rate = parseFloat(d?.usd?.egp);
+    if (rate > 30) { console.log('✓ fawaz USD/EGP:', rate); return rate; }
+  } catch(e) { console.warn('✗ fawaz rates:', e.message); }
+
+  try {
+    const r = await fetch('https://api.frankfurter.app/latest?from=USD&to=EGP', {
+      signal: AbortSignal.timeout(7000)
+    });
     const d = await r.json();
     const rate = parseFloat(d?.rates?.EGP);
-    if (rate > 30) { console.log('✓ frankfurter USD/EGP:', rate); return rate; }
+    if (rate > 30) { console.log('✓ frankfurter:', rate); return rate; }
   } catch(e) { console.warn('✗ frankfurter:', e.message); }
 
   try {
-    const r = await fetchWithTimeout('https://open.er-api.com/v6/latest/USD', 8000);
+    const r = await fetch('https://open.er-api.com/v6/latest/USD', {
+      signal: AbortSignal.timeout(7000)
+    });
     const d = await r.json();
     const rate = parseFloat(d?.rates?.EGP);
-    if (rate > 30) { console.log('✓ er-api USD/EGP:', rate); return rate; }
+    if (rate > 30) { console.log('✓ er-api:', rate); return rate; }
   } catch(e) { console.warn('✗ er-api:', e.message); }
 
   return null;
 }
 
 /* ─────────────────────────────────────────────
-   استخراج السعر من HTML
-───────────────────────────────────────────── */
-function extractFromHtml(html, source) {
-  if (source.includes('banklive')) {
-    // "The current price of gold is 7823.00 for 24 karats"
-    const m = html.match(/current price of gold is ([\d.]+) for 24/i);
-    if (m) return parseFloat(m[1]);
-
-    // fallback داخل banklive
-    const m21 = html.match(/current price of gold is ([\d.]+) for 21/i);
-    if (m21) return parseFloat(m21[1]) * 24 / 21;
-  }
-
-  if (source.includes('youm7')) {
-    const m = html.match(/عيار[^\d]*24[^\d]*([\d,]+)/);
-    if (m) return parseFloat(m[1].replace(/,/g, ''));
-    const m21 = html.match(/عيار[^\d]*21[^\d]*([\d,]+)/);
-    if (m21) return parseFloat(m21[1].replace(/,/g, '')) * 24 / 21;
-  }
-
-  // عام لأي موقع عربي
-  const patterns24 = [
-    /عيار\s*24[^0-9]*([\d,]+)/,
-    /24\s*عيار[^0-9]*([\d,]+)/,
-    /"24k?"[^0-9]*([\d,]+)/i,
-  ];
-  for (const p of patterns24) {
-    const m = html.match(p);
-    if (m) {
-      const v = parseFloat(m[1].replace(/,/g, ''));
-      if (v > 5000) return v;
-    }
-  }
-
-  const m21 = html.match(/عيار\s*21[^0-9]*([\d,]+)/);
-  if (m21) {
-    const v = parseFloat(m21[1].replace(/,/g, ''));
-    if (v > 5000) return v * 24 / 21;
-  }
-
-  return 0;
-}
-
-/* ─────────────────────────────────────────────
-   جلب السعر المصري — الترتيب الصحيح
+   الدالة الرئيسية — أولوية للسعر المصري
 ───────────────────────────────────────────── */
 async function fetchEgyptPrices() {
-  try {
-    // الطلبين بالتوازي من API routes محلية — مفيش CORS خالص
-    const [goldRes, ratesRes] = await Promise.allSettled([
-      fetch('/api/gold').then(r => r.json()),
-      fetch('/api/rates').then(r => r.json())
+
+  // المرحلة ١: جرب السعر المصري المباشر أولاً
+  const egyptGram = await fetchEgyptGoldDirect();
+  if (egyptGram) {
+    const [usdEgp, ozUSD] = await Promise.all([
+      fetchUsdEgpRate(),
+      fetchGoldUSD()
     ]);
+    const finalRate = usdEgp || lastUsdEgp;
+    const finalUSD  = ozUSD  || lastOzUSD;
+    if (usdEgp) lastUsdEgp = usdEgp;
+    if (ozUSD)  lastOzUSD  = ozUSD;
+    const ozEGP = egyptGram * 31.1035;
+    return { gram: egyptGram, ounce: ozEGP, usd: finalUSD };
+  }
 
-    const goldData  = goldRes.status  === 'fulfilled' ? goldRes.value  : null;
-    const ratesData = ratesRes.status === 'fulfilled' ? ratesRes.value : null;
+  // المرحلة ٢: احسب من دولار × صرف
+  console.warn('⚠ المواقع المصرية فشلت — حساب من الدولار');
+  const [ozUSD, usdEgp] = await Promise.all([
+    fetchGoldUSD(),
+    fetchUsdEgpRate()
+  ]);
 
-    const ozUSD  = goldData?.oz_usd;
-    const usdEgp = ratesData?.usd_egp;
+  if (ozUSD && ozUSD > 1000 && usdEgp && usdEgp > 30) {
+    lastUsdEgp = usdEgp;
+    lastOzUSD  = ozUSD;
+    const gram24 = (ozUSD * usdEgp) / 31.1035;
+    return { gram: gram24, ounce: ozUSD * usdEgp, usd: ozUSD };
+  }
 
-    if (ozUSD && ozUSD > 1000 && usdEgp && usdEgp > 30) {
-      lastUsdEgp = usdEgp;
-      const gram24 = (ozUSD * usdEgp) / 31.1035;
-      const ozEGP  = ozUSD * usdEgp;
-      console.log('✓ /api/gold + /api/rates:', gram24.toFixed(0), '| rate:', usdEgp);
-      return { gram: gram24, ounce: ozEGP, usd: ozUSD };
-    }
+  if (ozUSD && ozUSD > 1000 && lastUsdEgp > 30) {
+    lastOzUSD = ozUSD;
+    return { gram: (ozUSD * lastUsdEgp) / 31.1035, ounce: ozUSD * lastUsdEgp, usd: ozUSD };
+  }
 
-    // fallback: دولار × آخر سعر صرف محفوظ
-    if (ozUSD && ozUSD > 1000 && lastUsdEgp > 30) {
-      const gram24 = (ozUSD * lastUsdEgp) / 31.1035;
-      return { gram: gram24, ounce: ozUSD * lastUsdEgp, usd: ozUSD };
-    }
-
-  } catch (e) {
-    console.error('fetch error:', e);
+  if (usdEgp && usdEgp > 30 && lastOzUSD > 1000) {
+    lastUsdEgp = usdEgp;
+    return { gram: (lastOzUSD * usdEgp) / 31.1035, ounce: lastOzUSD * usdEgp, usd: lastOzUSD };
   }
 
   return null;
 }
 
 /* ─────────────────────────────────────────────
-   حلقة التحديث — كل ١٠ دقائق
+   حلقة التحديث — كل دقيقتين
 ───────────────────────────────────────────── */
 async function update() {
   const dot  = document.getElementById('live-dot');
@@ -596,7 +674,6 @@ async function update() {
     lastOzEGP  = data.ounce;
     if (data.usd && data.usd > 1000) lastOzUSD = data.usd;
     render(lastGram24, lastOzEGP, lastOzUSD);
-
     dot.style.background = '#4ECB5A';
     dot.style.boxShadow  = '0 0 10px #4ECB5A';
     document.getElementById('live-text').textContent = 'مباشر';
