@@ -1,36 +1,35 @@
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cache-Control', 's-maxage=300');
-
-  // محاولة 1: frankfurter
+async function fetchEgyptPrices() {
   try {
-    const r = await fetch('https://api.frankfurter.app/latest?from=USD&to=EGP', {
-      signal: AbortSignal.timeout(6000)
-    });
-    const d = await r.json();
-    const rate = parseFloat(d?.rates?.EGP);
-    if (rate > 30) return res.json({ usd_egp: rate, source: 'frankfurter' });
-  } catch (e) {}
+    const [goldRes, ratesRes] = await Promise.allSettled([
+      fetch('/api/gold',  { cache: 'no-store' }).then(r => r.json()),
+      fetch('/api/rates', { cache: 'no-store' }).then(r => r.json())
+    ]);
 
-  // محاولة 2: exchangerate-api
-  try {
-    const r = await fetch('https://open.er-api.com/v6/latest/USD', {
-      signal: AbortSignal.timeout(6000)
-    });
-    const d = await r.json();
-    const rate = parseFloat(d?.rates?.EGP);
-    if (rate > 30) return res.json({ usd_egp: rate, source: 'er-api' });
-  } catch (e) {}
+    const goldData  = goldRes.status  === 'fulfilled' ? goldRes.value  : null;
+    const ratesData = ratesRes.status === 'fulfilled' ? ratesRes.value : null;
 
-  // محاولة 3: fixer fallback
-  try {
-    const r = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json', {
-      signal: AbortSignal.timeout(6000)
-    });
-    const d = await r.json();
-    const rate = parseFloat(d?.usd?.egp);
-    if (rate > 30) return res.json({ usd_egp: rate, source: 'fawaz-api' });
-  } catch (e) {}
+    console.log('gold →', goldData);
+    console.log('rates →', ratesData);
 
-  return res.status(502).json({ error: 'rates fetch failed' });
+    const gram24 = goldData?.gram24 ? parseFloat(goldData.gram24) : null;
+    const usdEgp = ratesData?.usd_egp ? parseFloat(ratesData.usd_egp) : null;
+
+    if (gram24 && gram24 > 5000) {
+      if (usdEgp && usdEgp > 30) lastUsdEgp = usdEgp;
+      const ozUSD = lastOzUSD;
+      const ozEGP = gram24 * 31.1035;
+      lastGram24 = gram24;
+      return { gram: gram24, ounce: ozEGP, usd: ozUSD };
+    }
+
+    if (usdEgp && usdEgp > 30 && lastOzUSD > 1000) {
+      lastUsdEgp = usdEgp;
+      const gram = (lastOzUSD * usdEgp) / 31.1035;
+      return { gram, ounce: lastOzUSD * usdEgp, usd: lastOzUSD };
+    }
+
+  } catch (e) {
+    console.error('fetchEgyptPrices error:', e);
+  }
+  return null;
 }
