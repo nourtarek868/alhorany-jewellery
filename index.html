@@ -393,10 +393,8 @@ tick(); setInterval(tick, 1000);
    GOLD PRICE ENGINE
 ═══════════════════════════════════════════════════ */
 
-const SELL_F = 1.00;
-const BUY_F  = 0.9969;
-
-let lastGram24 = 7823;
+let lastBuy24  = 7823;   // سعر الشراء - عيار 24 (مباشر من المصدر)
+let lastSell24 = 7823;   // سعر البيع  - عيار 24 (مباشر من المصدر)
 let lastOzEGP  = 243380;
 let lastOzUSD  = 4540;
 let isUpdating  = false;
@@ -419,10 +417,11 @@ function setLiveStatus(isLive) {
 }
 
 function applyPriceData(data) {
-  lastGram24 = data.gram;
+  lastBuy24  = data.buy;
+  lastSell24 = data.sell;
   lastOzEGP  = data.ounce;
   if (data.usd && data.usd > 1000) lastOzUSD = data.usd;
-  render(lastGram24, lastOzEGP, lastOzUSD);
+  render(lastBuy24, lastSell24, lastOzEGP, lastOzUSD);
   setLiveStatus(true);
   document.getElementById('status-note').textContent = 'السوق المصري — محدّث ✓';
   document.getElementById('last-update').textContent =
@@ -450,20 +449,22 @@ function setVal(id, text) {
   el.classList.add('flash');
 }
 
-function render(gram24, ozEGP, ozUSD) {
+/* buy24 و sell24 جايين مباشرة من المصدر (بدون أي معامل ضرب) —
+   وباقي العيارات بتتحسب بنفس نسبة العيار زي ما كانت قبل كده */
+function render(buy24, sell24, ozEGP, ozUSD) {
   for (const k of [24, 22, 21, 18]) {
-    const raw  = gram24 * (k / 24);
-    const sell = raw * SELL_F;
-    const buy  = raw * BUY_F;
+    const sell = sell24 * (k / 24);
+    const buy  = buy24  * (k / 24);
     setVal(`pv-${k}`,   fmt(sell));
     setVal(`sell-${k}`, fmt(sell));
     setVal(`buy-${k}`,  fmt(buy));
   }
 
-  const raw21 = gram24 * (21 / 24);
-  setVal('mv-pound',   fmt(raw21 * SELL_F * 8));
-  setVal('sell-pound', fmt(raw21 * SELL_F * 8));
-  setVal('buy-pound',  fmt(raw21 * BUY_F  * 8));
+  const sell21 = sell24 * (21 / 24);
+  const buy21  = buy24  * (21 / 24);
+  setVal('mv-pound',   fmt(sell21 * 8));
+  setVal('sell-pound', fmt(sell21 * 8));
+  setVal('buy-pound',  fmt(buy21 * 8));
 
   setVal('mv-oz-egp', fmt(ozEGP));
   setVal('mv-oz-usd', fmt(ozUSD));
@@ -471,7 +472,7 @@ function render(gram24, ozEGP, ozUSD) {
   const usdSagha = ozUSD > 0 ? (ozEGP / ozUSD) : 0;
   document.getElementById('usd-rate').textContent = usdSagha.toFixed(2);
 
-  setVal('zakat-val', fmt(85 * gram24 * BUY_F));
+  setVal('zakat-val', fmt(85 * buy24));
 }
 
 /* ─────────────────────────────────────────────
@@ -496,8 +497,32 @@ async function fetchWithTimeout(url, timeoutMs, outerSignal) {
 }
 
 /* ─────────────────────────────────────────────
-   استخراج السعر من HTML
+   استخراج سعر الشراء والبيع (عيار 24) من صفحة banklive
+   الجدول في الصفحة شكله:
+   ... karat-24 ... "Buying Price" رقم ... "Selling Price" رقم ... karat-22 ...
+   بناخد أول رقمين أكبر من 1000 بعد ظهور "karat-24" وقبل "karat-22"
+   (بيستبعد نسب التغيير % لأنها أرقام صغيرة زي 0.09 مش هتعدي 1000)
 ───────────────────────────────────────────── */
+function extractBankliveBuySell(html) {
+  const startIdx = html.search(/karat-24/i);
+  if (startIdx === -1) return null;
+
+  let endIdx = html.indexOf('karat-22', startIdx + 8);
+  if (endIdx === -1) endIdx = startIdx + 1500;
+
+  const segment = html.slice(startIdx, endIdx);
+
+  const nums = (segment.match(/\d{1,3}(?:,\d{3})*(?:\.\d+)?/g) || [])
+    .map(s => parseFloat(s.replace(/,/g, '')))
+    .filter(v => v > 1000);
+
+  if (nums.length >= 2) {
+    return { buy: nums[1], sell: nums[0] };
+  }
+  return null;
+}
+
+/* استخراج عام (لمصادر تانية غير banklive، لو اتفعّلت) — رقم واحد بس */
 function extractFromHtml(html, source) {
   if (source.includes('banklive')) {
     // "The current price of gold is 7823.00 for 24 karats"
@@ -602,7 +627,11 @@ async function fetchBankliveOne(makeProxy, signal) {
   const label = proxyLabel(proxyUrl);
   const html = await fetchHtmlViaProxy(proxyUrl, 25000, signal);
   if (!html) throw new Error('empty html');
-  const result = makePriceResult(extractFromHtml(html, BANKLIVE_URL));
+
+  const bs = extractBankliveBuySell(html);
+  if (!bs) throw new Error('invalid price');
+
+  const result = makePriceResult(bs.buy, bs.sell);
   if (!result) throw new Error('invalid price');
   return { result, label };
 }
@@ -625,7 +654,7 @@ async function tryBanklive() {
     try {
       const { result, label } = await Promise.any(tasks);
       cancelRest.abort();
-      console.log(`✓ banklive.net via ${label}:`, result.gram.toFixed(0));
+      console.log(`✓ banklive.net via ${label}: buy=${result.buy.toFixed(0)} sell=${result.sell.toFixed(0)}`);
       return result;
     } catch {
       if (round < 1) await sleep(1500);
@@ -654,9 +683,12 @@ const PROXIES_PREFIX = [
   (t) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(t)}`,
 ];
 
-function makePriceResult(gram24) {
-  if (gram24 > 5000 && gram24 < 20000) {
-    return { gram: gram24, ounce: gram24 * 31.1035, usd: lastOzUSD };
+/* buy24 و sell24 لازم ييجوا مباشرة من المصدر - من غير أي معامل ضرب.
+   لو مصدر تاني بيديلنا رقم واحد بس (زي extractFromHtml العام)، بنستخدمه
+   لسعري البيع والشراء الاتنين لحد ما يبقى عندنا استخراج مخصص ليه. */
+function makePriceResult(buy24, sell24 = buy24) {
+  if (buy24 > 1000 && buy24 < 20000 && sell24 > 1000 && sell24 < 20000) {
+    return { buy: buy24, sell: sell24, ounce: sell24 * 31.1035, usd: lastOzUSD };
   }
   return null;
 }
@@ -680,7 +712,7 @@ async function tryFetchEgyptPricesOnce() {
 
         const result = makePriceResult(extractFromHtml(html, source));
         if (result) {
-          console.log(`✓ ${source.split('/')[2]} via ${proxyUrl.split('/')[2]}:`, result.gram.toFixed(0));
+          console.log(`✓ ${source.split('/')[2]} via ${proxyUrl.split('/')[2]}:`, result.buy.toFixed(0));
           return result;
         }
       } catch(e) {
@@ -722,7 +754,7 @@ async function update() {
 
   const note = document.getElementById('status-note');
 
-  render(lastGram24, lastOzEGP, lastOzUSD);
+  render(lastBuy24, lastSell24, lastOzEGP, lastOzUSD);
   setLiveStatus(false);
   note.textContent = 'جارٍ جلب السعر من المصادر المصرية...';
 
