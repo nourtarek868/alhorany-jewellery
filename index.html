@@ -189,7 +189,7 @@
     .lbl-buy  { color:var(--buy-col); font-weight:500; }
     .lbl-buy  b { color:var(--buy-col); font-weight:700; margin-right:2px; }
     .market-row {
-      display:grid; grid-template-columns:1.35fr 1fr 1fr; gap:clamp(8px,1.2vw,16px);
+      display: grid; gap:clamp(8px,1.2vw,16px);
     }
     .card-mkt {
       background:var(--mkt-bg); border:1px solid var(--line); border-radius:5px;
@@ -266,8 +266,8 @@
       overflow:hidden;
     }
     .btc-tables-row {
-      display:flex; flex-direction:column;
-      gap:clamp(6px,1vh,12px);
+      display:flex; flex-direction:row;
+      gap:clamp(10px,1.4vw,18px);
       flex:1;
       min-height:0;
       overflow:hidden;
@@ -288,14 +288,14 @@
     }
     .btc-block {
       display:flex; flex-direction:column; gap:4px;
-      flex:1; min-height:0; overflow:hidden;
+      flex:1; min-height:0; min-width:0; overflow:hidden;
     }
     .btc-block-title {
       font-size:clamp(.56rem,.85vw,.68rem); letter-spacing:.12em; text-transform:uppercase;
       color:var(--gold); font-weight:600; flex-shrink:0;
     }
     .btc-row {
-      display:grid; grid-template-columns:2.1fr 1fr 1fr 1fr;
+      display:grid; grid-template-columns:2.3fr 1fr 1fr;
       gap:2px;
       font-size:clamp(.66rem,0.86vw,.86rem);
       padding:2px 3px;
@@ -434,20 +434,6 @@
             <div class="mkt-sub">تبيع: <span id="buy-pound">—</span> &nbsp;|&nbsp; تشتري: <span id="sell-pound">—</span> ج.م</div>
           </div>
         </div>
-        <div class="card-mkt">
-          <div class="mkt-label">الأوقية<br/><small>بالجنيه المصري</small></div>
-          <div class="mkt-right">
-            <div class="mkt-val" id="mv-oz-egp">—</div>
-            <div class="mkt-sub">٣١.١٠٣٥ جرام — عيار ٢٤</div>
-          </div>
-        </div>
-        <div class="card-mkt">
-          <div class="mkt-label">الأوقية<br/><small>بالدولار الأمريكي</small></div>
-          <div class="mkt-right">
-            <div class="mkt-val" id="mv-oz-usd">—</div>
-            <div class="mkt-sub">دولار الصاغة: <span id="usd-rate">—</span> ج.م</div>
-          </div>
-        </div>
       </div>
       </div><!-- /price-col -->
 
@@ -461,96 +447,96 @@
         <!-- ═══ عيار 24 ═══ -->
         <div class="btc-block">
           <div class="btc-block-title">عيار ٢٤</div>
-          <div class="btc-row btc-row-head"><span class="c-name">النوع</span><span>بدون غلاف</span><span>بالغلاف</span><span>مصنعية+دمغة</span></div>
-          <div class="btc-cols" style="column-count:2">
+          <div class="btc-row btc-row-head"><span class="c-name">النوع</span><span>كاش باك</span><span>مصنعية</span></div>
+          <div class="btc-cols" style="column-count:1">
 <div class="btc-row btc-row-group">السبائك</div>
-<div class="btc-row"><span class="c-name">1 جرام</span><span>10</span><span>28.5</span><span>187</span></div>
-<div class="btc-row"><span class="c-name">2.5 جرام</span><span>10</span><span>28.5</span><span>112</span></div>
-<div class="btc-row"><span class="c-name">5 جرام</span><span>10</span><span>28.5</span><span>87</span></div>
-<div class="btc-row"><span class="c-name">10 جرام</span><span>10</span><span>28.5</span><span>84</span></div>
-<div class="btc-row"><span class="c-name">20 جرام</span><span>10</span><span>28.5</span><span>82</span></div>
-<div class="btc-row"><span class="c-name">31.10 جرام</span><span>10</span><span>28.5</span><span>81</span></div>
-<div class="btc-row"><span class="c-name">50 جرام</span><span>10</span><span>28.5</span><span>79</span></div>
-<div class="btc-row"><span class="c-name">100 جرام</span><span>10</span><span>17</span><span>77</span></div>
-<div class="btc-row"><span class="c-name">116.65 جرام</span><span>10</span><span>28.5</span><span>67</span></div>
+<div class="btc-row"><span class="c-name">1 جرام</span><span>28.5</span><span>187</span></div>
+<div class="btc-row"><span class="c-name">2.5 جرام</span><span>28.5</span><span>112</span></div>
+<div class="btc-row"><span class="c-name">5 جرام</span><span>28.5</span><span>87</span></div>
+<div class="btc-row"><span class="c-name">10 جرام</span><span>28.5</span><span>84</span></div>
+<div class="btc-row"><span class="c-name">20 جرام</span><span>28.5</span><span>82</span></div>
+<div class="btc-row"><span class="c-name">31.10 جرام</span><span>28.5</span><span>81</span></div>
+<div class="btc-row"><span class="c-name">50 جرام</span><span>28.5</span><span>79</span></div>
+<div class="btc-row"><span class="c-name">100 جرام</span><span>17</span><span>77</span></div>
+<div class="btc-row"><span class="c-name">116.65 جرام</span><span>28.5</span><span>67</span></div>
 <div class="btc-row btc-row-group">السبائك البيضاوية</div>
-<div class="btc-row"><span class="c-name">5 جرام</span><span>10</span><span>28.5</span><span>112</span></div>
-<div class="btc-row"><span class="c-name">10 جرام</span><span>10</span><span>28.5</span><span>102</span></div>
-<div class="btc-row"><span class="c-name">15.9 جرام</span><span>10</span><span>28.5</span><span>94</span></div>
-<div class="btc-row"><span class="c-name">31.45 جرام</span><span>10</span><span>28.5</span><span>92</span></div>
+<div class="btc-row"><span class="c-name">5 جرام</span><span>28.5</span><span>112</span></div>
+<div class="btc-row"><span class="c-name">10 جرام</span><span>28.5</span><span>102</span></div>
+<div class="btc-row"><span class="c-name">15.9 جرام</span><span>28.5</span><span>94</span></div>
+<div class="btc-row"><span class="c-name">31.45 جرام</span><span>28.5</span><span>92</span></div>
 <div class="btc-row btc-row-group">خواتم عيار ٢٤</div>
-<div class="btc-row"><span class="c-name">1 جرام</span><span>8</span><span>8</span><span>142</span></div>
-<div class="btc-row"><span class="c-name">2.5 جرام</span><span>8</span><span>8</span><span>132</span></div>
-<div class="btc-row"><span class="c-name">5 جرام</span><span>8</span><span>8</span><span>122</span></div>
-<div class="btc-row"><span class="c-name">10 جرام</span><span>8</span><span>8</span><span>117</span></div>
+<div class="btc-row"><span class="c-name">1 جرام</span><span>8</span><span>142</span></div>
+<div class="btc-row"><span class="c-name">2.5 جرام</span><span>8</span><span>132</span></div>
+<div class="btc-row"><span class="c-name">5 جرام</span><span>8</span><span>122</span></div>
+<div class="btc-row"><span class="c-name">10 جرام</span><span>8</span><span>117</span></div>
 <div class="btc-row btc-row-group">إسورة (عيار ٢٤)</div>
-<div class="btc-row"><span class="c-name">31.1 جرام</span><span>8</span><span>8</span><span>113</span></div>
-<div class="btc-row"><span class="c-name">15.55 جرام</span><span>8</span><span>8</span><span>127</span></div>
+<div class="btc-row"><span class="c-name">31.1 جرام</span><span>8</span><span>113</span></div>
+<div class="btc-row"><span class="c-name">15.55 جرام</span><span>8</span><span>127</span></div>
 <div class="btc-row btc-row-group">كيلو (999.9 &amp; 995)</div>
-<div class="btc-row"><span class="c-name">ربع كيلو</span><span>12.2</span><span>12.2</span><span>35</span></div>
-<div class="btc-row"><span class="c-name">نصف كيلو</span><span>12.1</span><span>12.1</span><span>32.5</span></div>
-<div class="btc-row"><span class="c-name">1 كيلو</span><span>12.05</span><span>12.05</span><span>31.5</span></div>
+<div class="btc-row"><span class="c-name">ربع كيلو</span><span>12.2</span><span>35</span></div>
+<div class="btc-row"><span class="c-name">نصف كيلو</span><span>12.1</span><span>32.5</span></div>
+<div class="btc-row"><span class="c-name">1 كيلو</span><span>12.05</span><span>31.5</span></div>
 <div class="btc-row btc-row-group">كيلو دائري</div>
-<div class="btc-row"><span class="c-name">ربع كيلو</span><span>14</span><span>14</span><span>36</span></div>
-<div class="btc-row"><span class="c-name">نصف كيلو</span><span>14</span><span>14</span><span>35</span></div>
-<div class="btc-row"><span class="c-name">1 كيلو</span><span>14</span><span>14</span><span>34</span></div>
+<div class="btc-row"><span class="c-name">ربع كيلو</span><span>14</span><span>36</span></div>
+<div class="btc-row"><span class="c-name">نصف كيلو</span><span>14</span><span>35</span></div>
+<div class="btc-row"><span class="c-name">1 كيلو</span><span>14</span><span>34</span></div>
 <div class="btc-row btc-row-group">هدايا 2.5 جرام</div>
-<div class="btc-row"><span class="c-name">2.5 جرام</span><span>10</span><span>28.5</span><span>127</span></div>
+<div class="btc-row"><span class="c-name">2.5 جرام</span><span>28.5</span><span>127</span></div>
 <div class="btc-row btc-row-group">هدايا 5 جرام</div>
-<div class="btc-row"><span class="c-name">5 جرام</span><span>10</span><span>28.5</span><span>117</span></div>
+<div class="btc-row"><span class="c-name">5 جرام</span><span>28.5</span><span>117</span></div>
 <div class="btc-row btc-row-group">هدايا 10 جرام</div>
-<div class="btc-row"><span class="c-name">10 جرام</span><span>10</span><span>28.5</span><span>102</span></div>
+<div class="btc-row"><span class="c-name">10 جرام</span><span>28.5</span><span>102</span></div>
 <div class="btc-row btc-row-group">سبائك ديزني / مارفل</div>
-<div class="btc-row"><span class="c-name">2.5 جرام</span><span>10</span><span>28.5</span><span>112</span></div>
-<div class="btc-row"><span class="c-name">5 جرام</span><span>10</span><span>28.5</span><span>87</span></div>
-<div class="btc-row"><span class="c-name">10 جرام</span><span>10</span><span>28.5</span><span>84</span></div>
+<div class="btc-row"><span class="c-name">2.5 جرام</span><span>28.5</span><span>112</span></div>
+<div class="btc-row"><span class="c-name">5 جرام</span><span>28.5</span><span>87</span></div>
+<div class="btc-row"><span class="c-name">10 جرام</span><span>28.5</span><span>84</span></div>
 <div class="btc-row btc-row-group">الأميرات</div>
-<div class="btc-row"><span class="c-name">5 جرام</span><span>10</span><span>28.5</span><span>112</span></div>
-<div class="btc-row"><span class="c-name">10 جرام</span><span>10</span><span>28.5</span><span>102</span></div>
-<div class="btc-row"><span class="c-name">15.9 جرام</span><span>10</span><span>28.5</span><span>94</span></div>
-<div class="btc-row"><span class="c-name">31.10 جرام</span><span>10</span><span>28.5</span><span>92</span></div>
+<div class="btc-row"><span class="c-name">5 جرام</span><span>28.5</span><span>112</span></div>
+<div class="btc-row"><span class="c-name">10 جرام</span><span>28.5</span><span>102</span></div>
+<div class="btc-row"><span class="c-name">15.9 جرام</span><span>28.5</span><span>94</span></div>
+<div class="btc-row"><span class="c-name">31.10 جرام</span><span>28.5</span><span>92</span></div>
 <div class="btc-row btc-row-group">قلب تعليقة</div>
-<div class="btc-row"><span class="c-name">10.35 جرام</span><span>10</span><span>28.5</span><span>84</span></div>
+<div class="btc-row"><span class="c-name">10.35 جرام</span><span>28.5</span><span>84</span></div>
 <div class="btc-row btc-row-group">الخرائط</div>
-<div class="btc-row"><span class="c-name">31.1 جرام (خريطة مصر)</span><span>10</span><span>28.5</span><span>77</span></div>
-<div class="btc-row"><span class="c-name">31.1 جرام (السعودية)</span><span>10</span><span>28.5</span><span>77</span></div>
+<div class="btc-row"><span class="c-name">31.1 جرام (خريطة مصر)</span><span>28.5</span><span>77</span></div>
+<div class="btc-row"><span class="c-name">31.1 جرام (السعودية)</span><span>28.5</span><span>77</span></div>
 </div>
         </div>
 
         <!-- ═══ عيار 21 ═══ -->
         <div class="btc-block">
           <div class="btc-block-title">عيار ٢١</div>
-          <div class="btc-row btc-row-head"><span class="c-name">النوع</span><span>بدون غلاف</span><span>بالغلاف</span><span>مصنعية+دمغة</span></div>
-          <div class="btc-cols" style="column-count:2">
+          <div class="btc-row btc-row-head"><span class="c-name">النوع</span><span>كاش باك</span><span>مصنعية</span></div>
+          <div class="btc-cols" style="column-count:1">
 <div class="btc-row btc-row-group">الجنيهات</div>
-<div class="btc-row"><span class="c-name">ربع جنيه</span><span>10</span><span>24</span><span>87</span></div>
-<div class="btc-row"><span class="c-name">نصف جنيه</span><span>10</span><span>24</span><span>82</span></div>
-<div class="btc-row"><span class="c-name">جنيه</span><span>10</span><span>24</span><span>77</span></div>
-<div class="btc-row"><span class="c-name">2.5 جنيه</span><span>10</span><span>24</span><span>68</span></div>
-<div class="btc-row"><span class="c-name">5 جنيه</span><span>10</span><span>24</span><span>64</span></div>
-<div class="btc-row"><span class="c-name">10 جنيه</span><span>10</span><span>24</span><span>62</span></div>
+<div class="btc-row"><span class="c-name">ربع جنيه</span><span>24</span><span>87</span></div>
+<div class="btc-row"><span class="c-name">نصف جنيه</span><span>24</span><span>82</span></div>
+<div class="btc-row"><span class="c-name">جنيه</span><span>24</span><span>77</span></div>
+<div class="btc-row"><span class="c-name">2.5 جنيه</span><span>24</span><span>68</span></div>
+<div class="btc-row"><span class="c-name">5 جنيه</span><span>24</span><span>64</span></div>
+<div class="btc-row"><span class="c-name">10 جنيه</span><span>24</span><span>62</span></div>
 <div class="btc-row btc-row-group">جنيهات تعليقة</div>
-<div class="btc-row"><span class="c-name">ربع جنيه تعليقة</span><span>10</span><span>24</span><span>112</span></div>
-<div class="btc-row"><span class="c-name">نصف جنيه تعليقة</span><span>10</span><span>24</span><span>107</span></div>
-<div class="btc-row"><span class="c-name">جنيه تعليقة</span><span>10</span><span>24</span><span>102</span></div>
+<div class="btc-row"><span class="c-name">ربع جنيه تعليقة</span><span>24</span><span>112</span></div>
+<div class="btc-row"><span class="c-name">نصف جنيه تعليقة</span><span>24</span><span>107</span></div>
+<div class="btc-row"><span class="c-name">جنيه تعليقة</span><span>24</span><span>102</span></div>
 <div class="btc-row btc-row-group">جنيهات ديزني</div>
-<div class="btc-row"><span class="c-name">ربع جنيه</span><span>10</span><span>24</span><span>87</span></div>
-<div class="btc-row"><span class="c-name">نصف جنيه</span><span>10</span><span>24</span><span>82</span></div>
-<div class="btc-row"><span class="c-name">جنيه</span><span>10</span><span>24</span><span>77</span></div>
-<div class="btc-row"><span class="c-name">5 جنيه</span><span>10</span><span>24</span><span>64</span></div>
+<div class="btc-row"><span class="c-name">ربع جنيه</span><span>24</span><span>87</span></div>
+<div class="btc-row"><span class="c-name">نصف جنيه</span><span>24</span><span>82</span></div>
+<div class="btc-row"><span class="c-name">جنيه</span><span>24</span><span>77</span></div>
+<div class="btc-row"><span class="c-name">5 جنيه</span><span>24</span><span>64</span></div>
 <div class="btc-row btc-row-group">جنيهات تعليقة (موديل إضافي)</div>
-<div class="btc-row"><span class="c-name">ربع جنيه تعليقة</span><span>10</span><span>24</span><span>112</span></div>
-<div class="btc-row"><span class="c-name">نصف جنيه تعليقة</span><span>10</span><span>24</span><span>107</span></div>
-<div class="btc-row"><span class="c-name">جنيه تعليقة</span><span>10</span><span>24</span><span>102</span></div>
+<div class="btc-row"><span class="c-name">ربع جنيه تعليقة</span><span>24</span><span>112</span></div>
+<div class="btc-row"><span class="c-name">نصف جنيه تعليقة</span><span>24</span><span>107</span></div>
+<div class="btc-row"><span class="c-name">جنيه تعليقة</span><span>24</span><span>102</span></div>
 <div class="btc-row btc-row-group">خواتم عيار ٢١</div>
-<div class="btc-row"><span class="c-name">خاتم ربع جنيه</span><span>8</span><span>8</span><span>142</span></div>
-<div class="btc-row"><span class="c-name">خاتم نصف جنيه</span><span>8</span><span>8</span><span>132</span></div>
+<div class="btc-row"><span class="c-name">خاتم ربع جنيه</span><span>8</span><span>142</span></div>
+<div class="btc-row"><span class="c-name">خاتم نصف جنيه</span><span>8</span><span>132</span></div>
 <div class="btc-row btc-row-group">إسورة</div>
-<div class="btc-row"><span class="c-name">إسورة جرام سادة</span><span>8</span><span>8</span><span>127</span></div>
-<div class="btc-row"><span class="c-name">إسورة جرام مجدول</span><span>8</span><span>8</span><span>132</span></div>
+<div class="btc-row"><span class="c-name">إسورة جرام سادة</span><span>8</span><span>127</span></div>
+<div class="btc-row"><span class="c-name">إسورة جرام مجدول</span><span>8</span><span>132</span></div>
 <div class="btc-row btc-row-group">إطارات</div>
-<div class="btc-row"><span class="c-name">جميع الأوزان</span><span>0</span><span>0</span><span>97</span></div>
-<div class="btc-row"><span class="c-name">جميع الأوزان</span><span>0</span><span>0</span><span>157</span></div>
+<div class="btc-row"><span class="c-name">جميع الأوزان</span><span>0</span><span>97</span></div>
+<div class="btc-row"><span class="c-name">جميع الأوزان</span><span>0</span><span>157</span></div>
 </div>
         </div>
         </div><!-- /btc-tables-row -->
