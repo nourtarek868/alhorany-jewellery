@@ -150,7 +150,7 @@
     .cards-row {
       display:grid;
       grid-template-columns:repeat(2,1fr);
-      grid-auto-rows:10fr;
+      grid-auto-rows:1fr;
       gap:clamp(8px,1.2vw,16px);
       flex-shrink:0;
     }
@@ -195,7 +195,7 @@
     .lbl-buy  { color:var(--buy-col); font-weight:500; }
     .lbl-buy  b { color:var(--buy-col); font-weight:700; margin-right:2px; }
     .market-row {
-      display:grid; gap:clamp(8px,1.2vw,16px);
+      display:grid; grid-template-columns:1.35fr 1fr 1fr; gap:clamp(8px,1.2vw,16px);
       flex-shrink:0;
     }
     .card-mkt {
@@ -296,7 +296,7 @@
     .btc-row {
       display:grid; grid-template-columns:2.3fr 1fr 1fr;
       gap:2px;
-      font-size:clamp(.66rem,0.88vw,.77rem);
+      font-size:clamp(.66rem,0.88vw,.88rem);
       padding:1px 3px;
       border-bottom:1px solid var(--line);
       break-inside:avoid; -webkit-column-break-inside:avoid;
@@ -435,8 +435,23 @@
             <div class="mkt-sub">تبيع: <span id="buy-pound">—</span> &nbsp;|&nbsp; تشتري: <span id="sell-pound">—</span> ج.م</div>
           </div>
         </div>
+        <div class="card-mkt">
+          <div class="mkt-label">الأوقية<br/><small>بالجنيه المصري</small></div>
+          <div class="mkt-right">
+            <div class="mkt-val" id="mv-oz-egp">—</div>
+            <div class="mkt-sub">٣١.١٠٣٥ جرام — عيار ٢٤</div>
+          </div>
+        </div>
+        <div class="card-mkt">
+          <div class="mkt-label">الأوقية<br/><small>بالدولار الأمريكي</small></div>
+          <div class="mkt-right">
+            <div class="mkt-val" id="mv-oz-usd">—</div>
+            <div class="mkt-sub">دولار الصاغة: <span id="usd-rate">—</span> ج.م</div>
+          </div>
+        </div>
       </div>
       </div><!-- /price-col -->
+
       <div class="btc-col">
         <div class="btc-head">
           <div class="btc-head-title">قوائم BTC — بيوليون تريدنج سنتر</div>
