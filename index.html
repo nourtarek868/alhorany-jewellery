@@ -195,7 +195,7 @@
     .lbl-buy  { color:var(--buy-col); font-weight:500; }
     .lbl-buy  b { color:var(--buy-col); font-weight:700; margin-right:2px; }
     .market-row {
-      display:grid; grid-template-columns:1.35fr 1fr 1fr; gap:clamp(8px,1.2vw,16px);
+      display:grid; gap:clamp(8px,1.2vw,16px);
       flex-shrink:0;
     }
     .card-mkt {
@@ -345,7 +345,7 @@
         <div class="logo-wrap">
           <div class="logo-ring"></div>
           <img class="logo-img"
-            src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/7QCEUGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAGgcAigAYkZCTUQwYTAwMGE4OTAxMDAwMDVlMDIwMDAwZjQwMjAwMDA1NDAzMDAwMDYxMDMwMDAwNTUwNDAwMDA3ZTA1MDAwMGQ3MDUwMDAwNGIwNjAwMDA1YjA2MDAwMDdiMDcwMDAwAP/bAIQABQYGCwgLCwsLCw0LCwsNDg4NDQ4ODw0ODg4NDxAQEBEREBAQEA8TEhMPEBETFBQTERMWFhYTFhUVFhkWGRYWEgEFBQUKBwoICQkICwgKCAsKCgkJCgoMCQoJCgkMDQsKCwsKCw0MCwsICwsMDAwNDQwMDQoLCg0MDQ0MExQTExOc/8IAEQgAlgCWAwEiAAIRAQMRAf/EAFQAAQEAAgMBAQAAAAAAAAAAAAAHAwYBBAUIAhAAAQIDBAYGCQMFAAAAAAAAAREhAAIxA0FRYQQSMHGBkQUQINChsRMgMjNQwdHh8BQj8RVCUmBy/9oADAMBAAIAAwAAAAGbDrbIAAAAAAAApM2pJNgAAAAAAAAKTNqSTYAAAAAAAACkzakk2AAAAALIxRtXZEAygKTNqSTYADs+96TDozcNqcSTn6L/ADxg+e7JueVg1/5++kfnHnP+A7wCkzakk2ABvmh+jsrB3q9LM/HT2/3oRjc3nBCPcfnbpVvHR5zT16nlu6DlSZtSSbAAAAAAAAAUmbUkmwAAAAAAAAFJm1JJsAAAAAAAABSZtSSbKSJspImykibKSJspImykibKSJspImykibUkP/9oACAEBAAEFAu5Cy0OwMnSGg2VjY7OWzmm9WWUzxY289jLpMs3otl0fo0tqT0xaA9K6k1tonROoLPUtI/Q2ESWcskELGrLbWZbZaENfRo6F0XWmjRj6SaDFnaa8ui2kaTok9gdjo+kTWE366wmiz6bANr0xYzi204KeldIMSdJW8hsOmprOU9NSTj+pWQm0m1ltJ+4n/9oACAEDAAE/Afgdra6iKFXCLK1FoFHrTTlUlCpVWH8wbcCUEst0frMZfGLXSNf+1t8aGfaHrPKZuzrCZ2RucWtnPPMpl8ikHRZjlkatuWDokwwMWYnlJ7FahvOBy+F//9oACAECAAE/Af8AZP/aAAgBAQAGPwLuQkmmslmaUgCauP3icyWbqHqj7RpSdwJ9VAFOTx25J17IEpXVloKoiX1akWuuR7EzCnjs5pp/d2YWbPKOwJZJBSVLo/bQqAuq/ajWtJdef/BUA34wZfRgGVjKQG+0e6k5R2ZRLuCRjCf2zActnpMsvtMeH4Or0pDS+z/19uq0tR7MySy56l/M9TVgTC8LAkm/bMspQTMs83mBHaoaTCh2WtIX84WbRRrZFoT0WrIAwlr8hCGymmGBISAbCU2BvQseFI954CPeE73iWXUB1QiqkJPYqN4PmI7Nj2CO1KyE3FKNGtJJ6MYdxX//2gAIAQEAAT8h7kDgkUaFIJQCAQj3YAcXVEhQpClhc2O0HkixUgPAda9Rxca4FchDXGRBvITLio3DQae6wShlUlxKjAJs2S/lt4CvK+A1YkRpvH6JD4SupCROF5CL9YEMU1CDezq8ITGLVbcFFAhIOCPOCYr4X+IAICwB5IQEEIIIQ0K3cYSRJTszfC4shgVEYEjkdkR1UoqQT6upWuXgN48HiYJR7hA6sjMAFdwkAyC9SkLChlosADi0Av3c2grq9zLSSFZSgQupMN6CRwvGuORfZB6SgguAwIwglrpOSmR3JA0TEICDdVjdGSlALeAX4wiaFbZKgHDdAhGZgZ5pC83dvx+UE6nHBFOBEbleQ8oCuIki/wCBaFTnRSsGyhAaQQt5YABcO4r/2gAMAwEAAgADAAAAEPvvvvvvvvqvvvvvvvvvqvvvvvvvvvqvvvvvsPfvqvvocPw0fvqvvndhh8Nvqvvvvvvvvvqvvvvvvvvvqvvvvvvvvvqsssssssssov/aAAgBAwABPxD4GBYjly7eQ0EACACjotAblx9ZUFNCiQVwKFSHAQJYkLX14o2ZQQkMUbgP0gKQWOL7fjxvoEfnh6z8CIqKJAELGaF4QLgCg51h1CUC5BmBdjA5qooUZ1qmUGTiCOCszjBkgEhRqDdkzfC//9oACAECAAE/EPhi7NPhv//aAAgBAQABPxDuPMbyz8wwgEO+rgpAsl9nZ0Q9CN5IOtGI59Qaz8HF5hhwQzhjC6CFFwmaYRcRji2ZB/N5zFL0ArDz5sJUrSggTpegADUmlr4I3mP8uQQ4UQ1gRQDcmCpjtsgIhQFdx4D5IylirigLxgQdJFJBFZUGL4xE3RWpirfF6/igNlwziuLqcx5w4o4/lEQACRAASSWAAqSaADGHEcBvfnlepG0KCSQkMCQ4BLLdCa0VUqC5VvKQtbOT8xc6oEPIY7W/zKWyJRIICrW/chBcFYq3EnGmh5wDCqGKOAVYK3xfqvjEngAiG9qCimzoHh+NibF8oSHEJl4B5hCRNBGMQcYw/G/bLjBepYZUtfAEC2qRINC4Bg8+4r//2Q=="
+            src="data:image/jpeg;base64,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"
             alt="الحوراني" onerror="this.style.display='none'"/>
         </div>
         <div class="brand-name">الحوراني للمجوهرات</div>
@@ -435,23 +435,8 @@
             <div class="mkt-sub">تبيع: <span id="buy-pound">—</span> &nbsp;|&nbsp; تشتري: <span id="sell-pound">—</span> ج.م</div>
           </div>
         </div>
-        <div class="card-mkt">
-          <div class="mkt-label">الأوقية<br/><small>بالجنيه المصري</small></div>
-          <div class="mkt-right">
-            <div class="mkt-val" id="mv-oz-egp">—</div>
-            <div class="mkt-sub">٣١.١٠٣٥ جرام — عيار ٢٤</div>
-          </div>
-        </div>
-        <div class="card-mkt">
-          <div class="mkt-label">الأوقية<br/><small>بالدولار الأمريكي</small></div>
-          <div class="mkt-right">
-            <div class="mkt-val" id="mv-oz-usd">—</div>
-            <div class="mkt-sub">دولار الصاغة: <span id="usd-rate">—</span> ج.م</div>
-          </div>
-        </div>
       </div>
       </div><!-- /price-col -->
-
       <div class="btc-col">
         <div class="btc-head">
           <div class="btc-head-title">قوائم BTC — بيوليون تريدنج سنتر</div>
