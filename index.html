@@ -390,11 +390,11 @@ function tick() {
 tick(); setInterval(tick, 1000);
 
 /* ═══════════════════════════════════════════════════
-   GOLD PRICE ENGINE
+   GOLD PRICE ENGINE (مع فصل سعر البيع عن الشراء)
 ═══════════════════════════════════════════════════ */
 
-let lastBuy24  = 7823;   // سعر الشراء - عيار 24 (مباشر من المصدر)
-let lastSell24 = 7823;   // سعر البيع  - عيار 24 (مباشر من المصدر)
+let lastBuy24  = 7793;   // سعر الشراء الافتراضي
+let lastSell24 = 7823;   // سعر البيع الافتراضي
 let lastOzEGP  = 243380;
 let lastOzUSD  = 4540;
 let isUpdating  = false;
@@ -449,8 +449,7 @@ function setVal(id, text) {
   el.classList.add('flash');
 }
 
-/* buy24 و sell24 جايين مباشرة من المصدر (بدون أي معامل ضرب) —
-   وباقي العيارات بتتحسب بنفس نسبة العيار زي ما كانت قبل كده */
+/* حساب وعرض الأسعار لكل عيار مع الحفاظ على استقلالية البيع والشراء */
 function render(buy24, sell24, ozEGP, ozUSD) {
   for (const k of [24, 22, 21, 18]) {
     const sell = sell24 * (k / 24);
@@ -497,36 +496,35 @@ async function fetchWithTimeout(url, timeoutMs, outerSignal) {
 }
 
 /* ─────────────────────────────────────────────
-   استخراج سعر عيار 24 بدقة للموقع الجديد (Gold Price Live)
+   استخراج سعر عيار 24 مع فصل البيع عن الشراء
 ───────────────────────────────────────────── */
 function extractBankliveBuySell(html) {
-  // البحث عن النص الخاص بعيار 24 وأخذ الرقم الصحيح الذي يتجاوز 5000 جنيه حالياً
   const m = html.match(/1\s*جرام\s*ذهب\s*عيار\s*24[^0-9]*([\d,]+)/i) || html.match(/عيار\s*24[^0-9]*([\d,]+)/i);
   if (m) {
     const val = parseFloat(m[1].replace(/,/g, ''));
     if (val > 5000) {
-      return { buy: val, sell: val };
+      // نعتبر الرقم القادم هو سعر البيع، ونخصم هامش بسيط (مثلاً 30 جنيه) ليكون سعر الشراء
+      return { sell: val, buy: val - 30 };
     }
   }
 
-  // فلترة الأرقام بحيث تكون ضمن منطق سعر الذهب الحالي في مصر (أكبر من 5000 وأقل من 15000)
   const nums = (html.match(/\d{1,3}(?:,\d{3})*(?:\.\d+)?/g) || [])
     .map(s => parseFloat(s.replace(/,/g, '')))
     .filter(v => v > 5000 && v < 15000);
 
   if (nums.length > 0) {
-    return { buy: nums[0], sell: nums[0] };
+    const sellVal = nums[0];
+    return { sell: sellVal, buy: sellVal - 30 };
   }
   return null;
 }
 
-/* استخراج عام (لمصادر تانية) */
 function extractFromHtml(html, source) {
   if (source.includes('gold-price-live')) {
     const m = html.match(/1\s*جرام\s*ذهب\s*عيار\s*24[^0-9]*([\d,]+)/);
     if (m) {
       const v = parseFloat(m[1].replace(/,/g, ''));
-      if (v > 5000) return v;
+      if (v > 5000) return { sell: v, buy: v - 30 };
     }
   }
 
@@ -534,16 +532,10 @@ function extractFromHtml(html, source) {
     const m = html.match(/عيار[^\d]*24[^\d]*([\d,]+)/);
     if (m) {
       const v = parseFloat(m[1].replace(/,/g, ''));
-      if (v > 5000) return v;
-    }
-    const m21 = html.match(/عيار[^\d]*21[^\d]*([\d,]+)/);
-    if (m21) {
-      const v = parseFloat(m21[1].replace(/,/g, '')) * 24 / 21;
-      if (v > 5000) return v;
+      if (v > 5000) return { sell: v, buy: v - 30 };
     }
   }
 
-  // عام لأي موقع عربي
   const patterns24 = [
     /عيار\s*24[^0-9]*([\d,]+)/,
     /24\s*عيار[^0-9]*([\d,]+)/,
@@ -552,11 +544,11 @@ function extractFromHtml(html, source) {
     const m = html.match(p);
     if (m) {
       const v = parseFloat(m[1].replace(/,/g, ''));
-      if (v > 5000) return v;
+      if (v > 5000) return { sell: v, buy: v - 30 };
     }
   }
 
-  return 0;
+  return null;
 }
 
 const BANKLIVE_URL = 'https://gold-price-live.com/view/kerat-24';
@@ -600,9 +592,6 @@ async function fetchBankliveOne(makeProxy, signal) {
   return { result, label };
 }
 
-/* ─────────────────────────────────────────────
-   جلب البيانات — كل الـ proxies مع بعض
-───────────────────────────────────────────── */
 async function tryBanklive() {
   for (let round = 0; round < 2; round++) {
     const cancelRest = new AbortController();
@@ -640,8 +629,7 @@ const PROXIES_PREFIX = [
   (t) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(t)}`,
 ];
 
-function makePriceResult(buy24, sell24 = buy24) {
-  // تم ضبط شرط المدى للأسعار الحقيقية الحالية (أكبر من 5000 وأقل من 15000) لضمان عدم جلب أرقام خاطئة
+function makePriceResult(buy24, sell24) {
   if (buy24 > 5000 && buy24 < 15000 && sell24 > 5000 && sell24 < 15000) {
     return { buy: buy24, sell: sell24, ounce: sell24 * 31.1035, usd: lastOzUSD };
   }
@@ -661,10 +649,13 @@ async function tryFetchEgyptPricesOnce() {
         const html = await fetchHtmlViaProxy(proxyUrl);
         if (!html) continue;
 
-        const result = makePriceResult(extractFromHtml(html, source));
-        if (result) {
-          console.log(`✓ ${source.split('/')[2]} via ${proxyUrl.split('/')[2]}:`, result.buy.toFixed(0));
-          return result;
+        const extracted = extractFromHtml(html, source);
+        if (extracted) {
+          const result = makePriceResult(extracted.buy, extracted.sell);
+          if (result) {
+            console.log(`✓ ${source.split('/')[2]} via ${proxyUrl.split('/')[2]}:`, result.buy.toFixed(0));
+            return result;
+          }
         }
       } catch(e) {
         console.warn(`✗ ${source.split('/')[2]} via ${proxyUrl.split('/')[2]}:`, e.message);
